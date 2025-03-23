@@ -43,9 +43,9 @@ export default function LobbyScreen() {
 
                 <Link href="/auth/register" asChild>
                   <Button
-                      className="flex-1 bg-blue-700 rounded-lg h-12 shadow-sm"
+                      className="flex-1 bg-primary  rounded-lg h-12 shadow-sm"
                   >
-                    <Text className="text-white font-medium">Get Started</Text>
+                    <Text className="font-medium">Get Started</Text>
                   </Button>
                 </Link>
               </View>

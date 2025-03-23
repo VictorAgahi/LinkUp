@@ -33,9 +33,7 @@ function Layout() {
     React.useEffect(() => {
         if (!auth) return;
 
-        // Add null check for initial auth state
         if (auth.isAuthenticated === null) {
-            // Still loading auth state
             return;
         }
 
