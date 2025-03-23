@@ -95,7 +95,7 @@ export default function RegisterScreen() {
               <Button className="mt-2 bg-blue-700" onPress={handleRegister}>
                 <Text className="text-white font-medium">Register</Text>
               </Button>
-              <Link href="/login" asChild>
+              <Link href="/auth/login" asChild>
                 <Text className="text-center text-muted-foreground mt-4">
                   Already have an account?{' '}
                   <Text className="text-primary font-semibold">Login</Text>

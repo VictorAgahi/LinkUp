@@ -1,14 +1,16 @@
+import * as React from 'react';
 import '~/global.css';
 import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import * as React from 'react';
 import { Platform } from 'react-native';
 import { NAV_THEME } from '~/lib/constants';
 import { useColorScheme } from '~/lib/useColorScheme';
 import { PortalHost } from '@rn-primitives/portal';
 import { ThemeToggle } from '~/components/ThemeToggle';
 import { setAndroidNavigationBar } from '~/lib/android-navigation-bar';
+import { AuthProvider, useAuth } from "~/lib/auth/authContext";
+
 
 const LIGHT_THEME: Theme = {
     ...DefaultTheme,
@@ -21,10 +23,28 @@ const DARK_THEME: Theme = {
 
 export { ErrorBoundary } from 'expo-router';
 
-export default function RootLayout() {
+function Layout() {
     const hasMounted = React.useRef(false);
     const { colorScheme, isDarkColorScheme } = useColorScheme();
     const [isColorSchemeLoaded, setIsColorSchemeLoaded] = React.useState(false);
+    const auth = useAuth();
+    const router = useRouter();
+
+    React.useEffect(() => {
+        if (!auth) return;
+
+        // Add null check for initial auth state
+        if (auth.isAuthenticated === null) {
+            // Still loading auth state
+            return;
+        }
+
+        if (auth.isAuthenticated) {
+            router.replace('/home');
+        } else {
+            router.replace('/auth');
+        }
+    }, [auth?.isAuthenticated]);
 
     useIsomorphicLayoutEffect(() => {
         if (hasMounted.current) return;
@@ -37,7 +57,7 @@ export default function RootLayout() {
         hasMounted.current = true;
     }, []);
 
-    if (!isColorSchemeLoaded) {
+    if (!isColorSchemeLoaded || auth?.isAuthenticated === null) {
         return null;
     }
 
@@ -46,13 +66,12 @@ export default function RootLayout() {
             <StatusBar style={isDarkColorScheme ? 'light' : 'dark'} />
             <Stack
                 screenOptions={{
-                    headerTitle: 'LinkUp',
                     headerTitleStyle: {
                         fontWeight: '600',
                         fontSize: 18,
                         color: isDarkColorScheme ? '#fff' : '#000',
                     },
-                    headerTintColor: isDarkColorScheme ? '#fff' : '#000', // Couleur de la flèche
+                    headerTintColor: isDarkColorScheme ? '#fff' : '#000',
                     headerBackTitle: 'Back',
                     headerRight: () => <ThemeToggle />,
                     headerStyle: {
@@ -63,14 +82,41 @@ export default function RootLayout() {
                 }}
             >
                 <Stack.Screen
-                    name="index"
-                    options={{
-                        headerShown: true,
-                    }}
+                    name="auth/index"
+                    options={{ headerTitle: 'LobbyPage' }}
+                />
+                <Stack.Screen
+                    name="auth/register/index"
+                    options={{ headerTitle: 'RegisterPage' }}
+                />
+                <Stack.Screen
+                    name="auth/login/index"
+                    options={{ headerTitle: 'LoginPage' }}
+                />
+
+                <Stack.Screen
+                    name="home/index"
+                    options={{ headerTitle: 'HomePage' }}
+                />
+                <Stack.Screen
+                    name="home/profile/index"
+                    options={{ headerTitle: 'ProfilePage' }}
+                />
+                <Stack.Screen
+                    name="chat/index"
+                    options={{ headerTitle: 'ConversationPage' }}
                 />
             </Stack>
             <PortalHost />
         </ThemeProvider>
+    );
+}
+
+export default function RootLayout() {
+    return (
+        <AuthProvider>
+            <Layout />
+        </AuthProvider>
     );
 }
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { View, TextInput, TouchableOpacity, Text } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { View, Text } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import {Input} from "~/components/ui/input";
@@ -42,10 +42,10 @@ export default function LoginScreen() {
                 <Text className="text-white font-medium">Sign In</Text>
               </Button>
               <View className="flex-row justify-between">
-                <Link href="/register" asChild>
+                <Link href="/auth/register" asChild>
                   <Text className="text-primary">Create Account</Text>
                 </Link>
-                <Link href="/forgot-password" asChild>
+                <Link href="/auth" asChild>
                   <Text className="text-primary">Forgot Password?</Text>
                 </Link>
               </View>
