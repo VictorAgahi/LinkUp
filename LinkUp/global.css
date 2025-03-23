@@ -4,110 +4,108 @@
 
 @layer base {
   :root {
-    /* Base */
-    --background: 0 0% 100%;         /* Blanc pur */
-    --foreground: 222 84% 5%;        /* Noir bleuté */
-
-    /* Primaire */
-    --primary: 263 67% 51%;          /* Indigo vif */
-    --primary-foreground: 0 0% 98%;  /* Blanc cassé */
-
-    /* Secondaire */
-    --secondary: 224 76% 70%;        /* Bleu doux */
+    --background: 0 0% 100%;
+    --foreground: 222 84% 5%;
+    --primary: 263 67% 51%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 224 76% 70%;
     --secondary-foreground: 222 84% 5%;
-
-    /* Accents */
-    --accent: 142 71% 45%;           /* Vert émeraude */
+    --accent: 142 71% 45%;
     --accent-foreground: 0 0% 98%;
-
-    /* États */
-    --destructive: 0 72% 51%;        /* Rouge vif */
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 71% 45%;           /* Vert succès */
-    --warning: 38 92% 50%;            /* Orange avertissement */
-
-    /* Interface */
-    --card: 0 0% 100%;               /* Fond de carte */
+    --destructive: 0 72% 51%;
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    --card: 0 0% 100%;
     --card-foreground: 222 84% 5%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 84% 5%;
-    --border: 240 5% 84%;            /* Gris clair pour bordures */
+    --border: 240 5% 84%;
     --input: 240 5% 84%;
-    --ring: 263 67% 51%;             /* Couleur de focus */
-
-    /* Texte */
-    --muted: 240 5% 64%;             /* Gris moyen */
+    --ring: 263 67% 51%;
+    --muted: 240 5% 64%;
     --muted-foreground: 240 4% 46%;
   }
 
   .dark {
-    /* Base */
-    --background: 222 84% 5%;        /* Noir profond */
-    --foreground: 210 20% 98%;       /* Blanc bleuté */
-
-    /* Primaire */
-    --primary: 224 76% 70%;          /* Bleu électrique */
+    --background: 222 84% 5%;
+    --foreground: 210 20% 98%;
+    --primary: 224 76% 70%;
     --primary-foreground: 222 84% 5%;
-
-    /* Secondaire */
-    --secondary: 263 67% 51%;        /* Indigo saturé */
+    --secondary: 263 67% 51%;
     --secondary-foreground: 210 20% 98%;
-
-    /* Accents */
-    --accent: 142 71% 45%;           /* Vert émeraude */
+    --accent: 142 71% 45%;
     --accent-foreground: 222 84% 5%;
-
-    /* États */
-    --destructive: 0 73% 63%;        /* Rouge coral */
-    --success: 142 76% 50%;          /* Vert plus vif */
-    --warning: 38 100% 60%;          /* Orange plus lumineux */
-
-    /* Interface */
-    --card: 222 84% 7%;              /* Noir légèrement éclairci */
+    --destructive: 0 73% 63%;
+    --success: 142 76% 50%;
+    --warning: 38 100% 60%;
+    --card: 222 84% 7%;
     --card-foreground: 210 20% 98%;
     --popover: 222 84% 7%;
     --popover-foreground: 210 20% 98%;
-    --border: 240 5% 26%;           /* Gris foncé */
+    --border: 240 5% 26%;
     --input: 240 5% 26%;
-    --ring: 224 76% 70%;             /* Bleu électrique */
-
-    /* Texte */
-    --muted: 240 5% 44%;             /* Gris moyen foncé */
+    --ring: 224 76% 70%;
+    --muted: 240 5% 44%;
     --muted-foreground: 240 5% 64%;
   }
 }
 
-/* Améliorations typographiques */
-@layer base {
-  html {
-    @apply scroll-smooth;
+/* Nouvelles améliorations */
+@layer components {
+  .scroll-smooth-touch {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 
-  body {
-    @apply antialiased font-sans text-foreground bg-background;
-    text-rendering: optimizeLegibility;
+  .glass-effect {
+    backdrop-filter: blur(12px);
+    background-color: hsl(var(--background) / 0.85);
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
+  .perspective-1000 {
+    perspective: 1000px;
   }
 
-  input, textarea, button {
-    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors;
+  .preserve-3d {
+    transform-style: preserve-3d;
   }
+}
 
-  /* Custom Scrollbar (web only) */
-  @media (pointer: fine) {
-    ::-webkit-scrollbar {
-      @apply w-2 h-2;
-    }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-    ::-webkit-scrollbar-track {
-      @apply bg-background;
-    }
+/* Améliorations des transitions */
+* {
+  transition:
+          color 0.2s ease,
+          background-color 0.3s ease,
+          border-color 0.25s ease,
+          opacity 0.2s ease;
+}
 
-    ::-webkit-scrollbar-thumb {
-      @apply bg-border rounded-full hover:bg-primary/50;
-    }
+/* Scroll amélioré pour mobile */
+@media (pointer: coarse) {
+  .scroll-area {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Optimisation des entrées */
+input, textarea, select {
+  @apply text-foreground bg-background rounded-lg border border-border;
+  min-height: 44px; /* Taille tactile optimale */
+  padding: 10px 14px;
+
+  &:focus {
+    @apply ring-2 ring-ring border-transparent;
   }
 }

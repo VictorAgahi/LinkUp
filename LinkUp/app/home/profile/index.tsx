@@ -8,12 +8,12 @@ import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 
 export default function ProfileScreen() {
-  const { colorScheme } = useColorScheme();
+  const isDarkColorScheme  = useColorScheme();
   const router = useRouter();
 
   return (
       <View className={`flex-1 justify-center items-center p-4 
-      ${colorScheme === 'dark'
+      ${isDarkColorScheme 
           ? 'bg-gradient-to-b from-slate-900 to-slate-800'
           : 'bg-gradient-to-b from-sky-100 to-blue-100'
       }`}>

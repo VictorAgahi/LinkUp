@@ -47,13 +47,13 @@ export default function RegisterScreen() {
   };
 
   return (
-      <View className={`flex-1 justify-center items-center p-4 ${isDarkColorScheme ? 'bg-slate-950' : 'bg-slate-50'}`}>
+      <View className={`flex-1 justify-center items-center p-4 bg-primary`}>
         <Animated.View
             entering={FadeIn.delay(100)}
             exiting={FadeOut}
             className="w-full max-w-md mx-4" // Ajout de mx-4 pour les petits écrans
         >
-          <Card className="rounded-xl bg-card border border-border ">
+          <Card className="rounded-xl bg-secondary border border-border  ">
             <CardHeader className="pb-6">
               <CardTitle className="text-3xl font-extrabold text-primary text-center">
                 Join Us

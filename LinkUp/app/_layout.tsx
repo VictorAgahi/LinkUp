@@ -33,7 +33,9 @@ function Layout() {
     React.useEffect(() => {
         if (!auth) return;
 
+        // Add null check for initial auth state
         if (auth.isAuthenticated === null) {
+            // Still loading auth state
             return;
         }
 
@@ -56,7 +58,7 @@ function Layout() {
     }, []);
 
     if (!isColorSchemeLoaded || auth?.isAuthenticated === null) {
-        return null;
+        return null; // Show loading state
     }
 
     return (
@@ -65,9 +67,9 @@ function Layout() {
             <Stack
                 screenOptions={{
                     headerTitleStyle: {
-                        fontWeight: '600',
+                        fontWeight: '700',
                         fontSize: 18,
-                        color: isDarkColorScheme ? '#fff' : '#000',
+                        color: isDarkColorScheme ? '' : '#000',
                     },
                     headerTintColor: isDarkColorScheme ? '#fff' : '#000',
                     headerBackTitle: 'Back',
@@ -92,6 +94,7 @@ function Layout() {
                     options={{ headerTitle: 'LoginPage' }}
                 />
 
+                {/* Authenticated Stack */}
                 <Stack.Screen
                     name="home/index"
                     options={{ headerTitle: 'HomePage' }}
