@@ -2,12 +2,11 @@ import * as React from 'react';
 import { View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { Text } from '~/components/ui/text';
-import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 
-export default function ConversationScreen() {
+export default function ChatScreen() {
   const { colorScheme } = useColorScheme();
   const router = useRouter();
 
@@ -41,3 +40,6 @@ export default function ConversationScreen() {
       </View>
   );
 }
+ChatScreen.options = {
+  headerTitle: 'Chat Room',
+};

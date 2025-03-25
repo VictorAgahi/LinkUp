@@ -1,9 +1,10 @@
-// app/home/profile/index.tsx
+
 import * as React from 'react';
 import { View, Text } from 'react-native';
 import { NAV_THEME } from '~/lib/constants';
 import { useColorScheme } from '~/lib/useColorScheme';
-export default function ProfileScreen() {
+
+export default function SettingsScreen() {
   const { isDarkColorScheme } = useColorScheme();
 
 
@@ -18,14 +19,14 @@ export default function ProfileScreen() {
             className="text-3xl font-bold text-center"
             style={{ color: currentTheme.primary }}
         >
-          User Profile
+          Settings
         </Text>
 
         <Text
             className="text-lg text-center mt-2"
             style={{ color: currentTheme.text }}
         >
-          Here you can edit your profile details.
+          Manage your account settings and preferences.
         </Text>
       </View>
   );

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import '~/global.css';
 import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import { NAV_THEME } from '~/lib/constants';
@@ -10,7 +10,6 @@ import { PortalHost } from '@rn-primitives/portal';
 import { ThemeToggle } from '~/components/ThemeToggle';
 import { setAndroidNavigationBar } from '~/lib/android-navigation-bar';
 import { AuthProvider, useAuth } from "~/lib/auth/authContext";
-
 
 const LIGHT_THEME: Theme = {
     ...DefaultTheme,
@@ -33,9 +32,7 @@ function Layout() {
     React.useEffect(() => {
         if (!auth) return;
 
-        // Add null check for initial auth state
         if (auth.isAuthenticated === null) {
-            // Still loading auth state
             return;
         }
 
@@ -58,11 +55,11 @@ function Layout() {
     }, []);
 
     if (!isColorSchemeLoaded || auth?.isAuthenticated === null) {
-        return null; // Show loading state
+        return null;
     }
 
     return (
-        <ThemeProvider value={colorScheme  == 'dark' ? DARK_THEME : LIGHT_THEME}>
+        <ThemeProvider value={colorScheme == 'dark' ? DARK_THEME : LIGHT_THEME}>
             <StatusBar style={isDarkColorScheme ? 'light' : 'dark'} />
             <Stack
                 screenOptions={{
@@ -81,6 +78,7 @@ function Layout() {
                     },
                 }}
             >
+                {/* Routes publiques */}
                 <Stack.Screen
                     name="auth/index"
                     options={{ headerTitle: 'LobbyPage' }}
@@ -94,18 +92,11 @@ function Layout() {
                     options={{ headerTitle: 'LoginPage' }}
                 />
 
-                {/* Authenticated Stack */}
+                {/* Route protégée - Le layout home gérera ses propres écrans */}
                 <Stack.Screen
-                    name="home/index"
-                    options={{ headerTitle: 'HomePage' }}
-                />
-                <Stack.Screen
-                    name="home/profile/index"
-                    options={{ headerTitle: 'ProfilePage' }}
-                />
-                <Stack.Screen
-                    name="chat/index"
-                    options={{ headerTitle: 'ConversationPage' }}
+                    name="home"
+                    options={{ headerShown: false }}
+                    redirect={!auth?.isAuthenticated}
                 />
             </Stack>
             <PortalHost />
