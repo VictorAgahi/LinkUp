@@ -4,14 +4,19 @@ import { MoonStar } from '~/lib/icons/MoonStar';
 import { Sun } from '~/lib/icons/Sun';
 import { useColorScheme } from '~/lib/useColorScheme';
 import { cn } from '~/lib/utils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export function ThemeToggle() {
   const { isDarkColorScheme, setColorScheme } = useColorScheme();
 
-  function toggleColorScheme() {
+  async function toggleColorScheme() {
     const newTheme = isDarkColorScheme ? 'light' : 'dark';
     setColorScheme(newTheme);
     setAndroidNavigationBar(newTheme);
+
+    await AsyncStorage.setItem('theme', newTheme);
+
   }
 
   return (

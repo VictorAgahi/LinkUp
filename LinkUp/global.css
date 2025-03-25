@@ -3,50 +3,50 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222 84% 5%;
-    --primary: 263 67% 51%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 224 76% 70%;
-    --secondary-foreground: 222 84% 5%;
-    --accent: 142 71% 45%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 72% 51%;
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 84% 5%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 84% 5%;
-    --border: 240 5% 84%;
-    --input: 240 5% 84%;
-    --ring: 263 67% 51%;
-    --muted: 240 5% 64%;
-    --muted-foreground: 240 4% 46%;
+  :root{
+    --background: 0 0% 100%; /* Blanc */
+    --foreground: 222 84% 5%; /* Gris très foncé */
+    --primary: 263 67% 51%; /* Bleu (teinte primaire) */
+    --primary-foreground: 0 0% 98%; /* Blanc très clair */
+    --secondary: 224 76% 70%; /* Violet clair (teinte secondaire) */
+    --secondary-foreground: 222 84% 5%; /* Gris très foncé */
+    --accent: 142 71% 45%; /* Vert (accent) */
+    --accent-foreground: 0 0% 98%; /* Blanc très clair */
+    --destructive: 0 72% 51%; /* Rouge (destructif) */
+    --success: 142 71% 45%; /* Vert (succès) */
+    --warning: 38 92% 50%; /* Jaune (avertissement) */
+    --card: 0 0% 100%; /* Blanc (carte) */
+    --card-foreground: 222 84% 5%; /* Gris très foncé (texte carte) */
+    --popover: 0 0% 100%; /* Blanc (pop-up) */
+    --popover-foreground: 222 84% 5%; /* Gris très foncé (texte pop-up) */
+    --border: 240 5% 84%; /* Gris clair (bordure) */
+    --input: 240 5% 84%; /* Gris clair (entrée) */
+    --ring: 263 67% 51%; /* Bleu (cercle de focus) */
+    --muted: 240 5% 64%; /* Gris pâle */
+    --muted-foreground: 240 4% 46%; /* Gris encore plus pâle */
   }
 
   .dark {
-    --background: 222 84% 5%;
-    --foreground: 210 20% 98%;
-    --primary: 224 76% 70%;
-    --primary-foreground: 222 84% 5%;
-    --secondary: 263 67% 51%;
-    --secondary-foreground: 210 20% 98%;
-    --accent: 142 71% 45%;
-    --accent-foreground: 222 84% 5%;
-    --destructive: 0 73% 63%;
-    --success: 142 76% 50%;
-    --warning: 38 100% 60%;
-    --card: 222 84% 7%;
-    --card-foreground: 210 20% 98%;
-    --popover: 222 84% 7%;
-    --popover-foreground: 210 20% 98%;
-    --border: 240 5% 26%;
-    --input: 240 5% 26%;
-    --ring: 224 76% 70%;
-    --muted: 240 5% 44%;
-    --muted-foreground: 240 5% 64%;
+    --background: 222 84% 5%; /* Gris très foncé */
+    --foreground: 210 20% 98%; /* Blanc très clair */
+    --primary: 224 76% 70%; /* Violet clair */
+    --primary-foreground: 222 84% 5%; /* Gris très foncé */
+    --secondary: 263 67% 51%; /* Bleu */
+    --secondary-foreground: 210 20% 98%; /* Blanc très clair */
+    --accent: 142 71% 45%; /* Vert */
+    --accent-foreground: 222 84% 5%; /* Gris très foncé */
+    --destructive: 0 73% 63%; /* Rouge */
+    --success: 142 76% 50%; /* Vert clair */
+    --warning: 38 100% 60%; /* Jaune */
+    --card: 222 84% 7%; /* Gris très foncé */
+    --card-foreground: 210 20% 98%; /* Blanc très clair */
+    --popover: 222 84% 7%; /* Gris très foncé */
+    --popover-foreground: 210 20% 98%; /* Blanc très clair */
+    --border: 240 5% 26%; /* Gris plus foncé */
+    --input: 240 5% 26%; /* Gris plus foncé */
+    --ring: 224 76% 70%; /* Violet clair */
+    --muted: 240 5% 44%; /* Gris moyen */
+    --muted-foreground: 240 5% 64%; /* Gris pâle */
   }
 }
 

@@ -1,18 +1,50 @@
 export const NAV_THEME = {
   light: {
-    background: 'hsl(0 0% 100%)', // background
-    border: 'hsl(240 5.9% 90%)', // border
-    card: 'hsl(0 0% 100%)', // card
-    notification: 'hsl(0 84.2% 60.2%)', // destructive
-    primary: 'hsl(240 5.9% 10%)', // primary
-    text: 'hsl(240 10% 3.9%)', // foreground
+    background: 'hsl(0 0% 100%)', // background (Blanc)
+    border: 'hsl(240 5% 84%)', // border (Gris clair)
+    card: 'hsl(0 0% 100%)', // card (Blanc)
+    notification: 'hsl(0 72% 51%)', // destructive (Rouge)
+    primary: 'hsl(263 67% 51%)', // primary (Bleu)
+    text: 'hsl(222 84% 5%)', // foreground (Gris très foncé)
+    primaryForeground: 'hsl(0 0% 98%)', // primary-foreground (Blanc très clair)
+    secondary: 'hsl(224 76% 70%)', // secondary (Violet clair)
+    secondaryForeground: 'hsl(222 84% 5%)', // secondary-foreground (Gris très foncé)
+    accent: 'hsl(142 71% 45%)', // accent (Vert)
+    accentForeground: 'hsl(0 0% 98%)', // accent-foreground (Blanc très clair)
+    success: 'hsl(142 71% 45%)', // success (Vert)
+    warning: 'hsl(38 92% 50%)', // warning (Jaune)
+    cardForeground: 'hsl(222 84% 5%)', // card-foreground (Gris très foncé)
+    popover: 'hsl(0 0% 100%)', // popover (Blanc)
+    popoverForeground: 'hsl(222 84% 5%)', // popover-foreground (Gris très foncé)
+    ring: 'hsl(263 67% 51%)', // ring (Bleu)
+    muted: 'hsl(240 5% 64%)', // muted (Gris pâle)
+    mutedForeground: 'hsl(240 4% 46%)', // muted-foreground (Gris encore plus pâle)
+    input: 'hsl(240 5% 84%)', // input (Gris clair)
+    buttonsPrimary: 'hsl(263 67% 51%)', // button primary (Bleu)
+    buttonsSecondary: 'hsl(224 76% 70%)', // button secondary (Violet clair)
   },
   dark: {
-    background: 'hsl(240 10% 3.9%)', // background
-    border: 'hsl(240 3.7% 15.9%)', // border
-    card: 'hsl(240 10% 3.9%)', // card
-    notification: 'hsl(0 72% 51%)', // destructive
-    primary: 'hsl(0 0% 98%)', // primary
-    text: 'hsl(0 0% 98%)', // foreground
+    background: 'hsl(222 84% 5%)', // background (Gris très foncé)
+    border: 'hsl(240 5% 26%)', // border (Gris plus foncé)
+    card: 'hsl(222 84% 7%)', // card (Gris très foncé)
+    notification: 'hsl(0 73% 63%)', // destructive (Rouge)
+    primary: 'hsl(224 76% 70%)', // primary (Violet clair)
+    text: 'hsl(210 20% 98%)', // foreground (Blanc très clair)
+    primaryForeground: 'hsl(222 84% 5%)', // primary-foreground (Gris très foncé)
+    secondary: 'hsl(263 67% 51%)', // secondary (Bleu)
+    secondaryForeground: 'hsl(210 20% 98%)', // secondary-foreground (Blanc très clair)
+    accent: 'hsl(142 71% 45%)', // accent (Vert)
+    accentForeground: 'hsl(222 84% 5%)', // accent-foreground (Gris très foncé)
+    success: 'hsl(142 76% 50%)', // success (Vert clair)
+    warning: 'hsl(38 100% 60%)', // warning (Jaune)
+    cardForeground: 'hsl(210 20% 98%)', // card-foreground (Blanc très clair)
+    popover: 'hsl(222 84% 7%)', // popover (Gris très foncé)
+    popoverForeground: 'hsl(210 20% 98%)', // popover-foreground (Blanc très clair)
+    ring: 'hsl(224 76% 70%)', // ring (Violet clair)
+    muted: 'hsl(240 5% 44%)', // muted (Gris moyen)
+    mutedForeground: 'hsl(240 5% 64%)', // muted-foreground (Gris pâle)
+    input: 'hsl(240 5% 26%)', // input (Gris plus foncé)
+    buttonsPrimary: 'hsl(224 76% 70%)', // button primary (Violet clair)
+    buttonsSecondary: 'hsl(263 67% 51%)', // button secondary (Bleu)
   },
 };

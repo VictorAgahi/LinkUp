@@ -8,6 +8,7 @@ import validator from 'validator';
 import { Text } from '~/components/ui/text';
 import { Link } from 'expo-router';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import { NAV_THEME } from '~/lib/constants';
 
 export default function RegisterScreen() {
   const { isDarkColorScheme } = useColorScheme();
@@ -40,45 +41,82 @@ export default function RegisterScreen() {
     setForm({ ...form, [field]: value });
   };
 
-
   const handleRegister = () => {
     if (!validateInputs()) return;
     Alert.alert('Success', 'Registration completed!');
   };
+  const currentTheme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
+
 
   return (
-      <View className={`flex-1 justify-center items-center p-4 bg-primary`}>
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: currentTheme.background ,
+      }}>
         <Animated.View
             entering={FadeIn.delay(100)}
             exiting={FadeOut}
-            className="w-full max-w-md mx-4" // Ajout de mx-4 pour les petits écrans
+            style={{ width: '100%', maxWidth: 400, marginHorizontal: 16 }}
         >
-          <Card className="rounded-xl bg-secondary border border-border  ">
-            <CardHeader className="pb-6">
-              <CardTitle className="text-3xl font-extrabold text-primary text-center">
+          <Card style={{
+            borderRadius: 16,
+            backgroundColor: currentTheme.card,
+            borderColor:currentTheme.border,
+            borderWidth: 1,
+          }}>
+            <CardHeader style={{ paddingBottom: 24 }}>
+              <CardTitle style={{
+                fontSize: 24,
+                fontWeight: 'bold',
+                color: currentTheme.primary,
+                textAlign: 'center',
+              }}>
                 Join Us
               </CardTitle>
-              <Text className="text-center text-muted-foreground mt-2">
+              <Text style={{
+                textAlign: 'center',
+                color: currentTheme.mutedForeground ,
+                marginTop: 8,
+              }}>
                 Create your account to get started
               </Text>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <Text className="text-sm text-muted-foreground mb-1 ml-1">First Name</Text>
+            <CardContent style={{ marginTop: 16, gap: 16 }}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 12,
+                    color: currentTheme.mutedForeground ,
+                    marginBottom: 4,
+                  }}>First Name</Text>
                   <Input
                       placeholder="Jim"
-                      className="h-12"
+                      style={{
+                        height: 48,
+                        color: currentTheme.text,
+                        backgroundColor: currentTheme.input,
+                      }}
                       placeholderTextColor={isDarkColorScheme ? '#94a3b8' : '#64748b'}
                       value={form.firstName}
                       onChangeText={(val) => handleChange('firstName', val)}
                   />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-sm text-muted-foreground mb-1 ml-1">Last Name</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 12,
+                    color: currentTheme.mutedForeground,
+                    marginBottom: 4,
+                  }}>Last Name</Text>
                   <Input
                       placeholder="Pioche"
-                      className="h-12"
+                      style={{
+                        height: 48,
+                        color: currentTheme.text,
+                        backgroundColor: currentTheme.input,
+                      }}
                       placeholderTextColor={isDarkColorScheme ? '#94a3b8' : '#64748b'}
                       value={form.lastName}
                       onChangeText={(val) => handleChange('lastName', val)}
@@ -87,9 +125,17 @@ export default function RegisterScreen() {
               </View>
 
               <View>
-                <Text className="text-sm text-muted-foreground mb-1 ml-1">Username</Text>
+                <Text style={{
+                  fontSize: 12,
+                  color: isDarkColorScheme ? NAV_THEME.dark.mutedForeground : NAV_THEME.light.mutedForeground,
+                  marginBottom: 4,
+                }}>Username</Text>
                 <Input
                     placeholder="jimpioche123"
+                    style={{
+                      color: isDarkColorScheme ? NAV_THEME.dark.text : NAV_THEME.light.text,
+                      backgroundColor: isDarkColorScheme ? NAV_THEME.dark.input : NAV_THEME.light.input,
+                    }}
                     placeholderTextColor={isDarkColorScheme ? '#94a3b8' : '#64748b'}
                     value={form.username}
                     onChangeText={(val) => handleChange('username', val)}
@@ -97,9 +143,17 @@ export default function RegisterScreen() {
               </View>
 
               <View>
-                <Text className="text-sm text-muted-foreground mb-1 ml-1">Email</Text>
+                <Text style={{
+                  fontSize: 12,
+                  color: isDarkColorScheme ? NAV_THEME.dark.mutedForeground : NAV_THEME.light.mutedForeground,
+                  marginBottom: 4,
+                }}>Email</Text>
                 <Input
                     placeholder="jim@pioche.com"
+                    style={{
+                      color: isDarkColorScheme ? NAV_THEME.dark.text : NAV_THEME.light.text,
+                      backgroundColor: isDarkColorScheme ? NAV_THEME.dark.input : NAV_THEME.light.input,
+                    }}
                     placeholderTextColor={isDarkColorScheme ? '#94a3b8' : '#64748b'}
                     value={form.email}
                     onChangeText={(val) => handleChange('email', val)}
@@ -109,9 +163,17 @@ export default function RegisterScreen() {
               </View>
 
               <View>
-                <Text className="text-sm text-muted-foreground mb-1 ml-1">Password</Text>
+                <Text style={{
+                  fontSize: 12,
+                  color: isDarkColorScheme ? NAV_THEME.dark.mutedForeground : NAV_THEME.light.mutedForeground,
+                  marginBottom: 4,
+                }}>Password</Text>
                 <Input
                     placeholder="••••••••"
+                    style={{
+                      color: isDarkColorScheme ? NAV_THEME.dark.text : NAV_THEME.light.text,
+                      backgroundColor: isDarkColorScheme ? NAV_THEME.dark.input : NAV_THEME.light.input,
+                    }}
                     placeholderTextColor={isDarkColorScheme ? '#94a3b8' : '#64748b'}
                     value={form.password}
                     onChangeText={(val) => handleChange('password', val)}
@@ -121,16 +183,25 @@ export default function RegisterScreen() {
 
               <Button
                   size="lg"
-                  className="mt-4 bg-primary text-secondary hover:bg-primary/90 active:bg-primary/80"
+                  style={{
+                    marginTop: 16,
+                    backgroundColor: isDarkColorScheme ? NAV_THEME.dark.buttonsPrimary : NAV_THEME.light.buttonsPrimary,
+                  }}
                   onPress={handleRegister}
               >
-                <Text className=" font-semibold text-lg">Create Account</Text>
+                <Text style={{ fontWeight: '600', fontSize: 18 }}>Create Account</Text>
               </Button>
 
-              <View className="flex-row justify-center space-x-1 mt-6">
-                <Text className="text-muted-foreground">Already have an account? </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 4, marginTop: 24 }}>
+                <Text style={{
+                  color: isDarkColorScheme ? NAV_THEME.dark.mutedForeground : NAV_THEME.light.mutedForeground,
+                }}>Already have an account? </Text>
                 <Link href="/auth/login" asChild>
-                  <Text className="text-primary font-semibold hover:text-primary/80">
+                  <Text style={{
+                    color: isDarkColorScheme ? NAV_THEME.dark.primary : NAV_THEME.light.primary,
+                    fontWeight: '600',
+                    textDecorationLine: 'underline',
+                  }}>
                     Sign in
                   </Text>
                 </Link>
