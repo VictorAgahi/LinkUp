@@ -92,7 +92,6 @@ function Layout() {
                     options={{ headerTitle: 'LoginPage' }}
                 />
 
-                {/* Route protégée - Le layout home gérera ses propres écrans */}
                 <Stack.Screen
                     name="home"
                     options={{ headerShown: false }}

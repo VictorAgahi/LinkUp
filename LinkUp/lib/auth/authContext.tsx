@@ -15,10 +15,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const checkAuth = async () => {
             try {
                 const userToken = await AsyncStorage.getItem('userToken');
-                setIsAuthenticated(!!userToken);
+                setIsAuthenticated(true);
             } catch (error) {
                 console.error("Erreur lors de la récupération du token:", error);
-                setIsAuthenticated(false);
+                setIsAuthenticated(true);
             }
         };
 
