@@ -11,7 +11,6 @@ import { ThemeToggle } from '~/components/ThemeToggle';
 import { SettingsToggle } from '~/components/SettingsToggle';
 import { useColorScheme } from '~/lib/useColorScheme';
 import { NAV_THEME } from '~/lib/constants';
-import { Stack } from 'expo-router';
 
 const Tab = createBottomTabNavigator();
 const StackNav = createStackNavigator();
