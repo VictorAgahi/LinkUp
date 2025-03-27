@@ -5,7 +5,8 @@ import {LoginDto} from "./dto/login.dto";
 import {RegisterDto} from "./dto/register.dto";
 import {AuthService} from "./auth.service";
 import {RefreshTokenDto} from "./dto/refresh-token.dto";
-import {JwtAuthGuard} from "./jwt-auth.guard";
+import {AuthGuard} from "@nestjs/passport";
+
 
 
 
@@ -24,7 +25,7 @@ export class AuthController {
         return this.authService.login(dto);
     }
     @Post('refresh-token')
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(AuthGuard('jwt-refresh'))
     async refreshToken(@Body() dto: RefreshTokenDto) {
         return this.authService.refreshToken(dto);
     }

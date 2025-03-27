@@ -4,6 +4,7 @@ import { PrismaModule } from "./common/prisma/prisma.module";
 import {Neo4jModule} from "./common/neo4j/neo4j.module";
 import {AuthModule} from "./auth/auth.module";
 import {CryptoModule} from "./common/crypto/crypto.module";
+import {UserModule} from "./user/user.module";
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import {CryptoModule} from "./common/crypto/crypto.module";
     PrismaModule,
     Neo4jModule,
     CryptoModule,
+    UserModule,
   ],
   controllers: [],
   providers: [],
