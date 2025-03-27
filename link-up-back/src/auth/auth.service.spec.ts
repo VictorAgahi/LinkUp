@@ -153,7 +153,6 @@ describe('AuthService', () => {
 
         it('should detect tampered refresh token', async () => {
             const dto = { refreshToken: 'tamperedToken' };
-            // Pour ce test, on simule que l'utilisateur existe et possède un refreshToken
             const userWithToken = { ...mockUser, refreshToken: await bcrypt.hash('validToken', 10) };
             prismaService.user.findUnique.mockResolvedValue(userWithToken);
             (bcrypt.compare as jest.Mock).mockResolvedValueOnce(false);
