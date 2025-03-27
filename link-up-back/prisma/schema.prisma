@@ -8,25 +8,28 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  firstName String
-  lastName  String
-  username  String   @unique
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tokens    Token[]
+  id            String          @id @default(uuid())
+  firstName     String          @db.Text
+  lastName      String          @db.Text
+  username      String          @unique @db.Text
+  password      String          @db.Text
+  emailHash     String          @unique @db.Text
+  refreshToken  String?         @db.Text
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  EncryptedData EncryptedData[]
+
+  @@index([emailHash], type: Hash)
+  @@map("users")
 }
 
-model Token {
-  id        Int      @id @default(autoincrement())
-  value     String
-  userId    Int
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-  type      String
-  user      User     @relation(fields: [userId], references: [id])
+model EncryptedData {
+  id         String   @id @default(uuid())
+  iv         String   @db.Text
+  cipherText String   @db.Text
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
 
-  @@index([userId, type])
+  @@map("encrypted_data")
 }

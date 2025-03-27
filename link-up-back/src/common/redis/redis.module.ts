@@ -1,10 +1,8 @@
-// Dans redis.module.ts
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { Module, Global } from '@nestjs/common';
 import { RedisService } from './redis.service';
 
+@Global()
 @Module({
-    imports: [ConfigModule.forRoot()], 
     providers: [RedisService],
     exports: [RedisService],
 })

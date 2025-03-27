@@ -1,9 +1,11 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
     private redisClient: Redis;
+    private readonly logger = new Logger(RedisService.name); // Logger NestJS
+
     async onModuleInit() {
         this.redisClient = new Redis({
             host: process.env.REDIS_HOST || 'localhost',
@@ -13,18 +15,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         });
 
         this.redisClient.on('connect', () => {
-            console.log('Connected to Redis');
+            this.logger.log('✅ Connected to Redis');
         });
 
         this.redisClient.on('error', (err) => {
-            console.error('Redis connection error '+process.env.REDIS_HOST+ ":" + Number(process.env.REDIS_PORT) , err);
+            this.logger.error(`❌ Redis connection error: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, err);
         });
     }
-
 
     async setValue(key: string, value: string, ttl: number) {
         await this.redisClient.set(key, value, 'EX', ttl);
     }
+
     async getValue(key: string): Promise<string | null> {
         return this.redisClient.get(key);
     }
@@ -36,10 +38,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     get client() {
         return this.redisClient;
     }
+
     async onModuleDestroy() {
         if (this.redisClient) {
             await this.redisClient.quit();
-            console.log('Disconnected from Redis');
+            this.logger.log('🛑 Disconnected from Redis');
         }
     }
 }
