@@ -1,5 +1,5 @@
 // app/home/_layout.tsx
-import React from 'react';
+import React, {useEffect} from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from './index';
@@ -18,6 +18,7 @@ const StackNav = createStackNavigator();
 const TabNavigator = () => {
     const { isDarkColorScheme } = useColorScheme();
     const theme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
+
 
     return (
         <Tab.Navigator

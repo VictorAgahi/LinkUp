@@ -15,6 +15,9 @@ import { LoginDto } from './dto/login.dto';
 import { JWT_CONSTANTS } from '../config/jwt.constants';
 import { sign } from 'jsonwebtoken';
 import { CryptoService } from '../common/crypto/crypto.service';
+import {RefreshTokenDto} from "./dto/refresh-token.dto";
+import * as jwt from 'jsonwebtoken';
+
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -40,9 +43,9 @@ export class AuthService implements OnModuleInit {
         const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 
         if (missingEnv.length > 0) {
-            throw new Error(
-                `Missing environment variables: ${missingEnv.join(', ')}`,
-            );
+            const errorMessage = `Missing environment variables: ${missingEnv.join(', ')}`;
+            this.logger.error(errorMessage);
+            throw new Error(errorMessage);
         }
     }
 
@@ -54,16 +57,16 @@ export class AuthService implements OnModuleInit {
             });
             await this.redis.deleteKey(`user:${userId}`);
         } catch (rollbackError) {
-            this.logger.error('Rollback failed', rollbackError.stack);
+            this.logger.error('Rollback failed during transaction', rollbackError.stack);
         }
     }
 
     async register(dto: RegisterDto) {
         try {
+            this.logger.log('Starting registration process for user: ' + dto.username);
             const hashedPassword = await bcrypt.hash(dto.password, 10);
             const encryptedData = await this.encryptUserData(dto);
-            console.log(encryptedData);
-
+            this.logger.log('Encrypted user data for registration: ', encryptedData);
 
             const user = await this.prisma.$transaction(async (prisma) => {
                 const user = await prisma.user.create({
@@ -85,69 +88,75 @@ export class AuthService implements OnModuleInit {
             });
 
             await this.cacheUserData(user);
+            this.logger.log('User registration successful for: ' + user.username);
             return this.generateTokens(user);
         } catch (error) {
-            this.logger.error(`Registration failed: ${error.message}`, error.stack);
-            throw new InternalServerErrorException('Registration failed');
+            this.logger.error(`Registration failed for user: ${dto.username}`, error.stack);
+            throw new InternalServerErrorException('Registration failed. Please try again later.');
         }
     }
 
     private async encryptUserData(dto: RegisterDto) {
-        return {
-            emailHash: this.crypto.deterministicEncrypt(dto.email),
-            firstName: this.crypto.deterministicEncrypt(dto.firstName),
-            lastName: this.crypto.deterministicEncrypt(dto.lastName),
-            username: this.crypto.deterministicEncrypt(dto.username),
-        };
-    }
-
-    private async generateEmailHash(email: string): Promise<string> {
-        return bcrypt.hash(email, 10);
+        try {
+            return {
+                emailHash: this.crypto.deterministicEncrypt(dto.email),
+                firstName: this.crypto.deterministicEncrypt(dto.firstName),
+                lastName: this.crypto.deterministicEncrypt(dto.lastName),
+                username: this.crypto.deterministicEncrypt(dto.username),
+            };
+        } catch (error) {
+            this.logger.error('Error encrypting user data', error.stack);
+            throw new InternalServerErrorException('Error encrypting user data');
+        }
     }
 
     private async cacheUserData(user: User) {
-        const decryptedUser = {
-            email: this.crypto.decrypt(user.emailHash),
-            firstName:  this.crypto.decrypt(user.firstName),
-            lastName:  this.crypto.decrypt(user.lastName),
-            username:  this.crypto.decrypt(user.username),
-        };
+        try {
+            const decryptedUser = {
+                email: this.crypto.decrypt(user.emailHash),
+                firstName: this.crypto.decrypt(user.firstName),
+                lastName: this.crypto.decrypt(user.lastName),
+                username: this.crypto.decrypt(user.username),
+            };
 
-        await this.redis.setValue(
-            `user:${user.id}`,
-            JSON.stringify(decryptedUser),
-            3600
-        );
+            await this.redis.setValue(
+                `user:${user.id}`,
+                JSON.stringify(decryptedUser),
+                3600
+            );
+            this.logger.log('Cached user data for: ' + user.username);
+        } catch (error) {
+            this.logger.error('Error caching user data', error.stack);
+        }
     }
 
     async login(dto: LoginDto) {
         try {
-
+            this.logger.log('Starting login process for email: ' + dto.email);
             const emailHash = this.crypto.deterministicEncrypt(dto.email);
-            console.log(emailHash)
+            this.logger.log('Encrypted email hash for login: ' + emailHash);
+
             const user = await this.prisma.user.findUnique({
-                where: {emailHash: emailHash},
+                where: { emailHash: emailHash },
             });
 
-
-
             if (!user) {
+                this.logger.warn('Login failed: Invalid email or user not found for email: ' + dto.email);
                 throw new UnauthorizedException('Invalid credentials');
             }
 
-            const isPasswordValid = await bcrypt.compare(
-                dto.password,
-                user.password,
-            );
+            const isPasswordValid = await bcrypt.compare(dto.password, user.password);
             const isEmailValid = await this.verifyEmail(user.emailHash, dto.email);
 
             if (!isPasswordValid || !isEmailValid) {
+                this.logger.warn('Login failed: Invalid password or email mismatch for email: ' + dto.email);
                 throw new UnauthorizedException('Invalid credentials');
             }
 
+            this.logger.log('Login successful for email: ' + dto.email);
             return this.generateTokens(user);
         } catch (error) {
-            this.logger.error(`Login failed: ${error.message}`, error.stack);
+            this.logger.error(`Login failed for email: ${dto.email}`, error.stack);
             throw new UnauthorizedException('Invalid credentials');
         }
     }
@@ -164,6 +173,7 @@ export class AuthService implements OnModuleInit {
 
     private async generateTokens(user: User) {
         try {
+            this.logger.log('Generating tokens for user: ' + user.username);
             const accessToken = this.generateAccessToken(user);
             const refreshToken = this.generateRefreshToken(user);
 
@@ -173,28 +183,77 @@ export class AuthService implements OnModuleInit {
                 data: { refreshToken: hashedRefreshToken },
             });
 
-            await this.redis.setValue(`access:${user.id}`, accessToken , 900);
-
+            await this.redis.setValue(`access:${user.id}`, accessToken, 900);
+            this.logger.log('Tokens generated and stored for user: ' + user.username);
             return { accessToken, refreshToken };
         } catch (error) {
-            this.logger.error('Token generation failed', error.stack);
-            throw new InternalServerErrorException('Authentication failed');
+            this.logger.error('Token generation failed for user: ' + user.username, error.stack);
+            throw new InternalServerErrorException('Token generation failed. Please try again later.');
         }
     }
 
     private generateAccessToken(user: User) {
-        return sign(
-            { sub: user.id },
-            process.env.JWT_ACCESS_SECRET!,
-            { expiresIn: JWT_CONSTANTS.ACCESS_EXPIRES_IN },
-        );
+        try {
+            return sign(
+                { sub: user.id },
+                process.env.JWT_ACCESS_SECRET!,
+                { expiresIn: JWT_CONSTANTS.ACCESS_EXPIRES_IN },
+            );
+        } catch (error) {
+            this.logger.error('Access token generation failed for user: ' + user.username, error.stack);
+            throw new InternalServerErrorException('Error generating access token');
+        }
     }
 
     private generateRefreshToken(user: User) {
-        return sign(
-            { sub: user.id },
-            process.env.JWT_REFRESH_SECRET!,
-            { expiresIn: JWT_CONSTANTS.REFRESH_EXPIRES_IN },
-        );
+        try {
+            return sign(
+                { sub: user.id },
+                process.env.JWT_REFRESH_SECRET!,
+                { expiresIn: JWT_CONSTANTS.REFRESH_EXPIRES_IN },
+            );
+        } catch (error) {
+            this.logger.error('Refresh token generation failed for user: ' + user.username, error.stack);
+            throw new InternalServerErrorException('Error generating refresh token');
+        }
+    }
+    private decodeRefreshToken(refreshToken: string): any {
+        try {
+            return jwt.decode(refreshToken);
+        } catch (error) {
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+    }
+    private isRefreshTokenExpired(refreshToken: string): boolean {
+        const decoded = this.decodeRefreshToken(refreshToken);
+        const currentTime = Math.floor(Date.now() / 1000);
+        return decoded.exp < currentTime;
+    }
+
+    async refreshToken(dto: RefreshTokenDto) {
+        try
+        {
+            this.logger.log('Starting refreshToken process for token : ' + dto.refreshToken);
+            const user = await this.prisma.user.findFirst({
+                where: { refreshToken: dto.refreshToken },
+            });
+            if (!user) {
+                this.logger.log('Refresh Token Not Valid User Should Login again : ' + dto.refreshToken);
+                throw new UnauthorizedException('Refresh Token Not Valid User Should Login');
+            }
+            if (user.refreshToken == null || this.isRefreshTokenExpired(user.refreshToken)) {
+                this.logger.log('Refresh Token Expired: User must login again');
+                throw new UnauthorizedException('Refresh Token has expired, please login again');
+            }
+
+            const accessToken = this.generateAccessToken(user);
+            this.logger.log('New Access Token generate : ' + accessToken);
+            await this.redis.setValue(`access:${user.id}`, accessToken, 900);
+            return { accessToken };
+        }
+        catch (error) {
+            this.logger.error('Refresh token generation failed for user ');
+            throw new InternalServerErrorException('Error generating refresh token');
+        }
     }
 }

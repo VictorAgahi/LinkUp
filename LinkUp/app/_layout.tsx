@@ -78,7 +78,6 @@ function Layout() {
                     },
                 }}
             >
-                {/* Routes publiques */}
                 <Stack.Screen
                     name="auth/index"
                     options={{ headerTitle: 'LobbyPage' }}

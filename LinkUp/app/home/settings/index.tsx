@@ -3,10 +3,12 @@ import * as React from 'react';
 import { View, Text } from 'react-native';
 import { NAV_THEME } from '~/lib/constants';
 import { useColorScheme } from '~/lib/useColorScheme';
+import {Button} from "~/components/ui/button";
+import {useAuth} from "~/lib/auth/authContext";
 
 export default function SettingsScreen() {
   const { isDarkColorScheme } = useColorScheme();
-
+  const { handleLogout } = useAuth();
 
   const currentTheme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
 
@@ -28,6 +30,18 @@ export default function SettingsScreen() {
         >
           Manage your account settings and preferences.
         </Text>
+
+
+        <Button
+            size="lg"
+            className="mt-4"
+            style={{ backgroundColor: currentTheme.buttonsPrimary }}
+            onPress={handleLogout}
+        >
+          <Text className="font-semibold text-lg" style={{ color: currentTheme.primaryForeground }}>
+            Logout
+          </Text>
+        </Button>
       </View>
   );
 }

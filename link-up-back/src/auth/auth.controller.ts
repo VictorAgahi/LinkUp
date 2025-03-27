@@ -8,11 +8,13 @@ import {
     HttpStatus,
     UseGuards,
     Req,
-    UnauthorizedException
+    UnauthorizedException, Header
 } from '@nestjs/common';
 import {LoginDto} from "./dto/login.dto";
 import {RegisterDto} from "./dto/register.dto";
 import {AuthService} from "./auth.service";
+import {RefreshTokenDto} from "./dto/refresh-token.dto";
+
 
 
 
@@ -20,14 +22,18 @@ import {AuthService} from "./auth.service";
 export class AuthController {
     constructor(private authService: AuthService) {}
 
+
     @Post('register')
     async register(@Body() dto: RegisterDto) {
-        console.log(dto);
         return this.authService.register(dto);
     }
     @Post('login')
     async login(@Body() dto: LoginDto) {
         return this.authService.login(dto);
+    }
+    @Post('refresh-token')
+    async refreshToken(@Body() dto: RefreshTokenDto) {
+        return this.authService.refreshToken(dto);
     }
 
 

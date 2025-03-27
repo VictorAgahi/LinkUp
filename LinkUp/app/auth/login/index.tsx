@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View } from 'react-native';
+import {Alert, View} from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
@@ -8,16 +8,25 @@ import { Link } from "expo-router";
 import { useColorScheme } from "~/lib/useColorScheme";
 import { Text } from '~/components/ui/text';
 import { NAV_THEME } from '~/lib/constants';
+import {useAuth} from "~/lib/auth/authContext";
 
 export default function LoginScreen() {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const { isDarkColorScheme } = useColorScheme();
+  const {handleLogin} = useAuth();
+  const [error, setError] = React.useState('');
 
   const currentTheme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
 
-  const handleLogin = () => {
-    console.log('Logging in with:', email, password);
+  const validateInputs = () => {
+    return true;
+  };
+
+
+  const handleSubmit = async () => {
+    if (!validateInputs()) return;
+    await handleLogin(email, password).catch((err) => {setError(err.data)});
   };
 
   return (
@@ -42,6 +51,7 @@ export default function LoginScreen() {
                 Sign in to continue your journey
               </Text>
             </CardHeader>
+            {error && <Text>{error}</Text>}
             <CardContent className="space-y-4">
               <View>
                 <Text
@@ -82,7 +92,7 @@ export default function LoginScreen() {
                   size="lg"
                   className="mt-4"
                   style={{ backgroundColor: currentTheme.buttonsPrimary }}
-                  onPress={handleLogin}
+                  onPress={handleSubmit}
               >
                 <Text className="font-semibold text-lg" style={{ color: currentTheme.primaryForeground }}>
                   Sign In

@@ -9,9 +9,11 @@ import { Text } from '~/components/ui/text';
 import { Link } from 'expo-router';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { NAV_THEME } from '~/lib/constants';
+import { useAuth } from "~/lib/auth/authContext";
 
 export default function RegisterScreen() {
   const { isDarkColorScheme } = useColorScheme();
+  const { handleRegister } = useAuth();
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -41,12 +43,19 @@ export default function RegisterScreen() {
     setForm({ ...form, [field]: value });
   };
 
-  const handleRegister = () => {
+  const handleSubmit = async () => {
     if (!validateInputs()) return;
-    Alert.alert('Success', 'Registration completed!');
+    const values = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      username: form.username,
+      email: form.email,
+      password: form.password,
+    };
+    await handleRegister(values);
   };
-  const currentTheme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
 
+  const currentTheme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
 
   return (
       <View style={{
@@ -54,7 +63,7 @@ export default function RegisterScreen() {
         justifyContent: 'center',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: currentTheme.background ,
+        backgroundColor: currentTheme.background,
       }}>
         <Animated.View
             entering={FadeIn.delay(100)}
@@ -64,7 +73,7 @@ export default function RegisterScreen() {
           <Card style={{
             borderRadius: 16,
             backgroundColor: currentTheme.card,
-            borderColor:currentTheme.border,
+            borderColor: currentTheme.border,
             borderWidth: 1,
           }}>
             <CardHeader style={{ paddingBottom: 24 }}>
@@ -78,7 +87,7 @@ export default function RegisterScreen() {
               </CardTitle>
               <Text style={{
                 textAlign: 'center',
-                color: currentTheme.mutedForeground ,
+                color: currentTheme.mutedForeground,
                 marginTop: 8,
               }}>
                 Create your account to get started
@@ -89,7 +98,7 @@ export default function RegisterScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={{
                     fontSize: 12,
-                    color: currentTheme.mutedForeground ,
+                    color: currentTheme.mutedForeground,
                     marginBottom: 4,
                   }}>First Name</Text>
                   <Input
@@ -187,7 +196,7 @@ export default function RegisterScreen() {
                     marginTop: 16,
                     backgroundColor: isDarkColorScheme ? NAV_THEME.dark.buttonsPrimary : NAV_THEME.light.buttonsPrimary,
                   }}
-                  onPress={handleRegister}
+                  onPress={handleSubmit}
               >
                 <Text style={{ fontWeight: '600', fontSize: 18 }}>Create Account</Text>
               </Button>
