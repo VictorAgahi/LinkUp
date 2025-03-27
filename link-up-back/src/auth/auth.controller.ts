@@ -1,19 +1,11 @@
 import {
-    Controller,
-    Post,
-    Get,
-    Param,
-    Body,
-    HttpException,
-    HttpStatus,
-    UseGuards,
-    Req,
-    UnauthorizedException, Header
+    Controller, Post, Body, UseGuards,
 } from '@nestjs/common';
 import {LoginDto} from "./dto/login.dto";
 import {RegisterDto} from "./dto/register.dto";
 import {AuthService} from "./auth.service";
 import {RefreshTokenDto} from "./dto/refresh-token.dto";
+import {JwtAuthGuard} from "./jwt-auth.guard";
 
 
 
@@ -32,6 +24,7 @@ export class AuthController {
         return this.authService.login(dto);
     }
     @Post('refresh-token')
+    @UseGuards(JwtAuthGuard)
     async refreshToken(@Body() dto: RefreshTokenDto) {
         return this.authService.refreshToken(dto);
     }

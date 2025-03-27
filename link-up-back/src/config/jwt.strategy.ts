@@ -3,6 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 import { JWT_CONSTANTS } from './jwt.constants';
+import {AuthService} from "../auth/auth.service";
+import * as process from "node:process";
 
 interface JwtPayload {
     sub: string;
@@ -11,23 +13,28 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor() {
-        const options: StrategyOptionsWithoutRequest = {
+    constructor(
+        private authService: AuthService,
+    ) {
+        super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: JWT_CONSTANTS.ACCESS_SECRET as string
-        };
-
-        super(options);
+            secretOrKey: process.env.JWT_SECRET_KEY || "",
+        });
     }
 
-    async validate(payload: JwtPayload) {
-        return {
-            userId: payload.sub,
-            email: payload.email
-        };
+    async validate(payload: any) {
+        const { sub: userId, username } = payload;
+
+        const user = await this.authService.findById(userId);
+        if (!user) {
+            throw new Error('User not found or invalid');
+        }
+        return { userId, username };
     }
 }
+
+
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'refresh-jwt') {
     constructor() {

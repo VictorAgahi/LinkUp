@@ -194,8 +194,9 @@ export class AuthService implements OnModuleInit {
 
     private generateAccessToken(user: User) {
         try {
+            const payload = { sub: user.id, username: user.username };
             return sign(
-                { sub: user.id },
+                payload,
                 process.env.JWT_ACCESS_SECRET!,
                 { expiresIn: JWT_CONSTANTS.ACCESS_EXPIRES_IN },
             );
@@ -204,11 +205,35 @@ export class AuthService implements OnModuleInit {
             throw new InternalServerErrorException('Error generating access token');
         }
     }
+    async findById(userId: string): Promise<User | null> {
+        try {
+            const cachedUser = await this.redis.getValue(`user:${userId}`);
+            if (cachedUser) {
+                this.logger.log(`User found in Redis: ${userId}`);
+                return JSON.parse(cachedUser);
+            }
+
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+            });
+
+            if (!user) {
+                this.logger.warn(`User not found in PostgreSQL: ${userId}`);
+                return null;
+            }
+            await this.cacheUserData(user);
+            return user;
+        } catch (error) {
+            this.logger.error('Error finding user by ID', error.stack);
+            throw new InternalServerErrorException('Error finding user');
+        }
+    }
 
     private generateRefreshToken(user: User) {
         try {
+            const payload = { sub: user.id, username: user.username };
             return sign(
-                { sub: user.id },
+                payload,
                 process.env.JWT_REFRESH_SECRET!,
                 { expiresIn: JWT_CONSTANTS.REFRESH_EXPIRES_IN },
             );
@@ -231,29 +256,28 @@ export class AuthService implements OnModuleInit {
     }
 
     async refreshToken(dto: RefreshTokenDto) {
-        try
-        {
-            this.logger.log('Starting refreshToken process for token : ' + dto.refreshToken);
-            const user = await this.prisma.user.findFirst({
-                where: { refreshToken: dto.refreshToken },
+        try {
+            this.logger.log('Starting refreshToken process');
+            const decoded = this.decodeRefreshToken(dto.refreshToken);
+            const user = await this.prisma.user.findUnique({
+                where: { id: decoded.sub },
             });
-            if (!user) {
-                this.logger.log('Refresh Token Not Valid User Should Login again : ' + dto.refreshToken);
-                throw new UnauthorizedException('Refresh Token Not Valid User Should Login');
+
+            if (!user || !user.refreshToken) {
+                throw new UnauthorizedException('Invalid refresh token');
             }
-            if (user.refreshToken == null || this.isRefreshTokenExpired(user.refreshToken)) {
-                this.logger.log('Refresh Token Expired: User must login again');
-                throw new UnauthorizedException('Refresh Token has expired, please login again');
+
+            const isValid = await bcrypt.compare(dto.refreshToken, user.refreshToken);
+            if (!isValid || this.isRefreshTokenExpired(dto.refreshToken)) {
+                throw new UnauthorizedException('Invalid or expired refresh token');
             }
 
             const accessToken = this.generateAccessToken(user);
-            this.logger.log('New Access Token generate : ' + accessToken);
             await this.redis.setValue(`access:${user.id}`, accessToken, 900);
             return { accessToken };
-        }
-        catch (error) {
-            this.logger.error('Refresh token generation failed for user ');
-            throw new InternalServerErrorException('Error generating refresh token');
+        } catch (error) {
+            this.logger.error('Refresh token failed', error.stack);
+            throw new UnauthorizedException('Refresh token validation failed');
         }
     }
 }
