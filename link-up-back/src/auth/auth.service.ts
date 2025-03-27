@@ -62,20 +62,21 @@ export class AuthService implements OnModuleInit {
     }
 
     async register(dto: RegisterDto) {
+        let user;
         try {
             this.logger.log('Starting registration process for user: ' + dto.username);
             const hashedPassword = await bcrypt.hash(dto.password, 10);
             const encryptedData = await this.encryptUserData(dto);
             this.logger.log('Encrypted user data for registration: ', encryptedData);
 
-            const user = await this.prisma.$transaction(async (prisma) => {
-                const user = await prisma.user.create({
-                    data: {
-                        ...encryptedData,
-                        password: hashedPassword,
-                    },
-                });
+            user = await this.prisma.user.create({
+                data: {
+                    ...encryptedData,
+                    password: hashedPassword,
+                },
+            });
 
+            try {
                 await this.neo4j.executeQuery(
                     `CREATE (u:User {id: $id, emailHash: $emailHash})`,
                     {
@@ -83,14 +84,19 @@ export class AuthService implements OnModuleInit {
                         emailHash: encryptedData.emailHash,
                     },
                 );
-
-                return user;
-            });
+            } catch (neo4jError) {
+                this.logger.error('Failed to insert user into Neo4j, rolling back...', neo4jError.stack);
+                await this.rollbackOperations(user.id);
+                throw new InternalServerErrorException('Registration failed due to database inconsistency.');
+            }
 
             await this.cacheUserData(user);
             this.logger.log('User registration successful for: ' + user.username);
             return this.generateTokens(user);
         } catch (error) {
+            if (user) {
+                await this.rollbackOperations(user.id);
+            }
             this.logger.error(`Registration failed for user: ${dto.username}`, error.stack);
             throw new InternalServerErrorException('Registration failed. Please try again later.');
         }
