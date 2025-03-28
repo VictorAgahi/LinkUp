@@ -4,10 +4,12 @@ import {Neo4jService} from "../common/neo4j/neo4j.service";
 import {RedisService} from "../common/redis/redis.service";
 import {CryptoService} from "../common/crypto/crypto.service";
 import {RequestAccessTokenDto} from "./dto/request.accessToken.dto";
+
+
 @Injectable()
 export class UserService implements OnModuleInit
 {
-    private readonly logger = new Logger(UserService.name);
+    readonly logger = new Logger(UserService.name);
 
     constructor(
         private prisma: PrismaService,

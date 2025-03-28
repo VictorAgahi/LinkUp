@@ -82,6 +82,9 @@ describe('UserService', () => {
 
         (bcrypt.hash as jest.Mock).mockClear();
         (bcrypt.compare as jest.Mock).mockClear();
+        jest.spyOn(service.logger, 'error').mockImplementation(() => {});
+        jest.spyOn(service.logger, 'warn').mockImplementation(() => {});
+        jest.spyOn(service.logger, 'log').mockImplementation(() => {});
         jest.clearAllMocks();
     });
 
