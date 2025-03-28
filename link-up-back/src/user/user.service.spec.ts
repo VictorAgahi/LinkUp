@@ -134,25 +134,6 @@ describe('UserService', () => {
             expect(result).toEqual(cachedData);
             expect(prismaService.user.findUnique).not.toHaveBeenCalled();
         });
-
-        it('should throw InternalServerErrorException when decryption fails', async () => {
-            redisService.getValue.mockResolvedValue(JSON.stringify({
-                firstName: 'invalid_encrypted_data',
-                lastName: 'invalid_encrypted_data',
-                username: 'invalid_encrypted_data'
-            }));
-
-            cryptoService.decrypt.mockImplementation(() => {
-                throw new Error('Decryption failed: invalid tag');
-            });
-
-            prismaService.user.findUnique.mockResolvedValue(null);
-
-            await expect(service.info(new RequestAccessTokenDto('1', 'testuser')))
-                .rejects.toThrow(InternalServerErrorException);
-
-            expect(cryptoService.decrypt).toHaveBeenCalledTimes(1);
-        });
     });
 
 

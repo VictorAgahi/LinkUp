@@ -1,4 +1,11 @@
-import {Injectable, InternalServerErrorException, Logger, NotFoundException, OnModuleInit} from "@nestjs/common";
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+    NotFoundException,
+    OnModuleInit
+} from "@nestjs/common";
 import {PrismaService} from "../common/prisma/prisma.service";
 import {Neo4jService} from "../common/neo4j/neo4j.service";
 import {RedisService} from "../common/redis/redis.service";
@@ -41,26 +48,27 @@ export class UserService implements OnModuleInit
 
     async info(dto: RequestAccessTokenDto) {
         try {
+            this.logger.log(`Received RequestAccessTokenDto`);
+
             const userId = dto.userId;
+            if (!userId) {
+                this.logger.error("Error: userId is undefined in DTO!");
+                throw new NotFoundException(`User with ID ${userId} not found.`);
+            }
             const cacheKey = `user:${userId}`;
+            this.logger.log(`Checking cache for key: ${cacheKey}`);
 
             const cachedUser = await this.redis.getValue(cacheKey);
             if (cachedUser) {
                 this.logger.log(`User ${userId} found in cache.`);
-                try {
-                    const parsedUser = JSON.parse(cachedUser);
-                    // Tester le décryptage des données du cache
-                    this.crypto.decrypt(parsedUser.firstName);
-                    this.crypto.decrypt(parsedUser.lastName);
-                    this.crypto.decrypt(parsedUser.username);
-                    return parsedUser;
-                } catch (error) {
-                    this.logger.error(`Cached data decryption failed for user ${userId}`);
-                    throw new InternalServerErrorException('Failed to decrypt cached user data');
-                }
+                const parsedUser = JSON.parse(cachedUser);
+                this.logger.log(`Cached user data: ${JSON.stringify(parsedUser)}`);
+                this.logger.log(`Returning decrypted cached user: ${JSON.stringify(parsedUser)}`);
+                return parsedUser;
+
             }
 
-            this.logger.log(`User ${userId} not in cache, querying PostgreSQL.`);
+            this.logger.warn(`User ${userId} not found in cache. Querying PostgreSQL...`);
             const user = await this.prisma.user.findUnique({
                 where: { id: userId },
                 select: {
@@ -71,8 +79,11 @@ export class UserService implements OnModuleInit
             });
 
             if (!user) {
+                this.logger.error(`User with ID ${userId} not found in PostgreSQL.`);
                 throw new NotFoundException(`User with ID ${userId} not found.`);
             }
+
+            this.logger.log(`User ${userId} found in PostgreSQL. Raw data: ${JSON.stringify(user)}`);
 
             const decryptedUser = {
                 firstName: this.crypto.decrypt(user.firstName),
@@ -80,16 +91,23 @@ export class UserService implements OnModuleInit
                 username: this.crypto.decrypt(user.username),
             };
 
+            this.logger.log(`Decrypted user data: ${JSON.stringify(decryptedUser)}`);
+
             await this.redis.setValue(cacheKey, JSON.stringify(decryptedUser), 3600);
             this.logger.log(`User ${userId} cached successfully.`);
 
             return decryptedUser;
         } catch (error) {
+            this.logger.error(`Error processing user info: ${error.message}`);
+
             if (error instanceof InternalServerErrorException || error instanceof NotFoundException) {
                 throw error;
             }
+
+            throw new InternalServerErrorException("An unexpected error occurred while fetching user info");
         }
     }
+
 
     async updateUser(dto: RequestAccessTokenDto, updateData: Partial<{ firstName: string; lastName: string; username: string }>) {
         try {

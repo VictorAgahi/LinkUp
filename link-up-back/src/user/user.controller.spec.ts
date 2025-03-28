@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { RequestAccessTokenDto } from './dto/request.accessToken.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ExecutionContext } from '@nestjs/common';
 
-// Mock du AuthGuard pour ignorer l'authentification
-jest.mock('@nestjs/passport', () => ({
-    AuthGuard: jest.fn().mockImplementation(() => ({
-        canActivate: jest.fn().mockReturnValue(true),
-    })),
-}));
+class MockAuthGuard {
+    canActivate(context: ExecutionContext): boolean {
+        const req = context.switchToHttp().getRequest();
+        req.user = { userId: '123', username: 'johndoe' };
+        return true;
+    }
+}
 
 describe('UserController', () => {
     let controller: UserController;
@@ -34,7 +34,10 @@ describe('UserController', () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [UserController],
             providers: [{ provide: UserService, useValue: mockUserService }],
-        }).compile();
+        })
+            .overrideGuard(AuthGuard('jwt-access')) // Remplace l'AuthGuard par un mock
+            .useValue(new MockAuthGuard())
+            .compile();
 
         controller = module.get<UserController>(UserController);
         userService = module.get<UserService>(UserService);
@@ -46,10 +49,16 @@ describe('UserController', () => {
 
     describe('info', () => {
         it('should return user info', async () => {
-            const dto: RequestAccessTokenDto = { userId: '123', username: 'johndoe' };
-            expect(await controller.info(dto)).toEqual({
+            const req = { user: { userId: '123', username: 'johndoe' } };
+
+            await expect(controller.info(req)).resolves.toEqual({
                 firstName: 'John',
                 lastName: 'Doe',
+                username: 'johndoe',
+            });
+
+            expect(userService.info).toHaveBeenCalledWith({
+                userId: '123',
                 username: 'johndoe',
             });
         });
@@ -57,22 +66,34 @@ describe('UserController', () => {
 
     describe('updateUser', () => {
         it('should update user information', async () => {
-            const dto: RequestAccessTokenDto = { userId: '123', username: 'johndoe' };
+            const req = { user: { userId: '123', username: 'johndoe' } };
             const updateData = { firstName: 'Updated', username: 'updateduser' };
 
-            expect(await controller.updateUser(dto, updateData)).toEqual({
+            await expect(controller.updateUser(req, updateData)).resolves.toEqual({
                 firstName: 'Updated',
                 lastName: 'Doe',
                 username: 'updateduser',
             });
+
+            expect(userService.updateUser).toHaveBeenCalledWith(
+                { userId: '123', username: 'johndoe' },
+                updateData
+            );
         });
     });
 
     describe('deleteUser', () => {
         it('should delete user', async () => {
-            const dto: RequestAccessTokenDto = { userId: '123', username: 'johndoe' };
+            const req = { user: { userId: '123', username: 'johndoe' } };
 
-            expect(await controller.deleteUser(dto)).toEqual({ message: 'User deleted successfully' });
+            await expect(controller.deleteUser(req)).resolves.toEqual({
+                message: 'User deleted successfully',
+            });
+
+            expect(userService.deleteUser).toHaveBeenCalledWith({
+                userId: '123',
+                username: 'johndoe',
+            });
         });
     });
 });
