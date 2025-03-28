@@ -61,20 +61,37 @@ export class CryptoService {
     }
 
     decrypt(encryptedString: string): string {
-        const { iv, authTag, cipherText } = this.parseEncryptedData(encryptedString);
+        try {
+            if (!encryptedString) {
+                throw new Error('Invalid encrypted data: input must be a non-empty string');
+            }
 
-        const decipher = createDecipheriv(
-            this.algorithm,
-            this.key,
-            Buffer.from(iv, 'hex')
-        );
+            const { iv, authTag, cipherText } = this.parseEncryptedData(encryptedString);
+            if (!iv || !authTag || !cipherText) {
+                throw new Error('Invalid encrypted data format: missing components');
+            }
 
-        decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+            const decipher = createDecipheriv(
+                this.algorithm,
+                this.key,
+                Buffer.from(iv, 'hex')
+            );
 
-        let decrypted = decipher.update(cipherText, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
+            decipher.setAuthTag(Buffer.from(authTag, 'hex'));
 
-        return decrypted;
+            let decrypted = decipher.update(cipherText, 'hex', 'utf8');
+
+            try {
+                decrypted += decipher.final('utf8');
+            } catch (finalError) {
+                throw new Error(`Decryption failed (final step): ${finalError.message}`);
+            }
+
+            return decrypted;
+        } catch (error) {
+            console.error(`[CryptoService] Decryption error: ${error.message}`);
+            throw new Error(`Decryption failed: ${error.message}`);
+        }
     }
 
     private serializeEncryptedData(data: EncryptedData): string {

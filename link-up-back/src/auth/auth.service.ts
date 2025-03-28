@@ -21,7 +21,7 @@ import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-    private readonly logger = new Logger(AuthService.name);
+    readonly logger = new Logger(AuthService.name);
 
     constructor(
         private prisma: PrismaService,
@@ -38,7 +38,9 @@ export class AuthService implements OnModuleInit {
         const requiredEnv = [
             'JWT_ACCESS_SECRET',
             'JWT_REFRESH_SECRET',
-            'ENCRYPTION_KEY',
+            'JWT_REFRESH_EXPIRES_IN',
+            'JWT_ACCESS_EXPIRES_IN',
+            'ENCRYPTION_KEY'
         ];
         const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 
@@ -48,8 +50,7 @@ export class AuthService implements OnModuleInit {
             throw new Error(errorMessage);
         }
     }
-
-    private async rollbackOperations(userId: string) {
+    async rollbackOperations(userId: string) {
         try {
             await this.prisma.user.delete({ where: { id: userId } });
             await this.neo4j.executeQuery(`MATCH (u:User {id: $id}) DELETE u`, {
@@ -57,7 +58,7 @@ export class AuthService implements OnModuleInit {
             });
             await this.redis.deleteKey(`user:${userId}`);
         } catch (rollbackError) {
-            this.logger.error('Rollback failed during transaction', rollbackError.stack);
+            this.logger.error('Rollback failed during transaction');
         }
     }
 
@@ -85,7 +86,7 @@ export class AuthService implements OnModuleInit {
                     },
                 );
             } catch (neo4jError) {
-                this.logger.error('Failed to insert user into Neo4j, rolling back...', neo4jError.stack);
+                this.logger.error('Failed to insert user into Neo4j, rolling back...');
                 await this.rollbackOperations(user.id);
                 throw new InternalServerErrorException('Registration failed due to database inconsistency.');
             }
@@ -97,7 +98,7 @@ export class AuthService implements OnModuleInit {
             if (user) {
                 await this.rollbackOperations(user.id);
             }
-            this.logger.error(`Registration failed for user: ${dto.username}`, error.stack);
+            this.logger.error(`Registration failed for user: ${dto.username}`);
             throw new InternalServerErrorException('Registration failed. Please try again later.');
         }
     }
@@ -111,12 +112,12 @@ export class AuthService implements OnModuleInit {
                 username: this.crypto.deterministicEncrypt(dto.username),
             };
         } catch (error) {
-            this.logger.error('Error encrypting user data', error.stack);
+            this.logger.error('Error encrypting user data');
             throw new InternalServerErrorException('Error encrypting user data');
         }
     }
 
-    private async cacheUserData(user: User) {
+    async cacheUserData(user: User) {
         try {
             const decryptedUser = {
                 email: this.crypto.decrypt(user.emailHash),
@@ -132,7 +133,7 @@ export class AuthService implements OnModuleInit {
             );
             this.logger.log('Cached user data for: ' + user.username);
         } catch (error) {
-            this.logger.error('Error caching user data', error.stack);
+            this.logger.error('Error caching user data');
         }
     }
 
@@ -162,7 +163,7 @@ export class AuthService implements OnModuleInit {
             this.logger.log('Login successful for email: ' + dto.email);
             return this.generateTokens(user);
         } catch (error) {
-            this.logger.error(`Login failed for email: ${dto.email}`, error.stack);
+            this.logger.error(`Login failed for email: ${dto.email}`);
             throw new UnauthorizedException('Invalid credentials');
         }
     }
@@ -172,12 +173,12 @@ export class AuthService implements OnModuleInit {
             const decryptedEmail = this.crypto.decrypt(encryptedEmail);
             return decryptedEmail === plainEmail;
         } catch (error) {
-            this.logger.error('Email decryption failed', error.stack);
+            this.logger.error('Email decryption failed');
             return false;
         }
     }
 
-    private async generateTokens(user: User) {
+    async generateTokens(user: User) {
         try {
             this.logger.log('Generating tokens for user: ' + user.username);
             const accessToken = this.generateAccessToken(user);
@@ -193,7 +194,7 @@ export class AuthService implements OnModuleInit {
             this.logger.log('Tokens generated and stored for user: ' + user.username);
             return { accessToken, refreshToken };
         } catch (error) {
-            this.logger.error('Token generation failed for user: ' + user.username, error.stack);
+            this.logger.error('Token generation failed for user: ' + user.username);
             throw new InternalServerErrorException('Token generation failed. Please try again later.');
         }
     }
@@ -207,7 +208,7 @@ export class AuthService implements OnModuleInit {
                 { expiresIn: JWT_CONSTANTS.ACCESS_EXPIRES_IN },
             );
         } catch (error) {
-            this.logger.error('Access token generation failed for user: ' + user.username, error.stack);
+            this.logger.error('Access token generation failed for user: ' + user.username);
             throw new InternalServerErrorException('Error generating access token');
         }
     }
@@ -230,7 +231,7 @@ export class AuthService implements OnModuleInit {
             await this.cacheUserData(user);
             return user;
         } catch (error) {
-            this.logger.error('Error finding user by ID', error.stack);
+            this.logger.error('Error finding user by ID');
             throw new InternalServerErrorException('Error finding user');
         }
     }
@@ -244,7 +245,7 @@ export class AuthService implements OnModuleInit {
                 { expiresIn: JWT_CONSTANTS.REFRESH_EXPIRES_IN },
             );
         } catch (error) {
-            this.logger.error('Refresh token generation failed for user: ' + user.username, error.stack);
+            this.logger.error('Refresh token generation failed for user: ' + user.username);
             throw new InternalServerErrorException('Error generating refresh token');
         }
     }
@@ -282,7 +283,7 @@ export class AuthService implements OnModuleInit {
             await this.redis.setValue(`access:${user.id}`, accessToken, 900);
             return { accessToken };
         } catch (error) {
-            this.logger.error('Refresh token failed', error.stack);
+            this.logger.error('Refresh token failed');
             throw new UnauthorizedException('Refresh token validation failed');
         }
     }

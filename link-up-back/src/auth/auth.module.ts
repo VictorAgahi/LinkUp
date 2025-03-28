@@ -9,6 +9,6 @@ import {PassportModule} from "@nestjs/passport";
     imports: [PassportModule.register({ defaultStrategy: 'jwt-refresh' })],
     controllers: [AuthController],
     providers: [AuthService,JwtRefreshStrategy],
-    exports: [PassportModule, JwtRefreshStrategy],
+    exports: [PassportModule, JwtRefreshStrategy, AuthService],
 })
 export class AuthModule {}

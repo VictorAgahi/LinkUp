@@ -7,7 +7,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { Neo4jService } from '../common/neo4j/neo4j.service';
 import { RedisService } from '../common/redis/redis.service';
 import { CryptoService } from '../common/crypto/crypto.service';
-
+import * as jwt from 'jsonwebtoken';
 
 const mockUser: User = {
     id: '1',
@@ -81,6 +81,9 @@ describe('AuthService', () => {
 
         (bcrypt.hash as jest.Mock).mockClear();
         (bcrypt.compare as jest.Mock).mockClear();
+        jest.spyOn(service.logger, 'error').mockImplementation(() => {});
+        jest.spyOn(service.logger, 'warn').mockImplementation(() => {});
+        jest.spyOn(service.logger, 'log').mockImplementation(() => {});
         jest.clearAllMocks();
     });
 
@@ -197,6 +200,124 @@ describe('AuthService', () => {
         });
     });
 
+    describe('Environment Configuration', () => {
+        const originalEnv = process.env;
+
+        afterEach(() => {
+            process.env = originalEnv;
+        });
+
+        it('should throw error on missing environment variables', async () => {
+            const originalEnv = process.env;
+            process.env = {
+                ...originalEnv,
+                JWT_ACCESS_SECRET: undefined,
+                ENCRYPTION_KEY: undefined
+            };
+
+            expect(() => service.onModuleInit()).toThrowError('Missing environment variables');
+
+            process.env = originalEnv;
+        }),
+
+        it('should not throw error with valid environment', () => {
+            expect(() => service.onModuleInit()).not.toThrow();
+        });
+    });
+    describe('Data Encryption', () => {
+        it('should handle encryption failures during registration', async () => {
+            const dto = {
+                username: 'testuser',
+                email: 'test@example.com',
+                password: 'password',
+                firstName: 'Test',
+                lastName: 'User'
+            };
+
+            cryptoService.deterministicEncrypt.mockImplementationOnce(() => {
+                throw new Error('Encryption failed');
+            });
+
+            await expect(service.register(dto))
+                .rejects.toThrow(InternalServerErrorException);
+        });
+    });
+
+    describe('Caching Mechanisms', () => {
+        it('should handle Redis caching failures', async () => {
+            const user = { ...mockUser, id: 'cache-fail' };
+            redisService.setValue.mockRejectedValueOnce(new Error('Redis error'));
+
+            await expect(service.cacheUserData(user)).resolves.toBeUndefined();
+            expect(service.logger.error).toHaveBeenCalledWith('Error caching user data');
+        });
+    });
+
+    describe('User Lookup', () => {
+        it('should handle corrupted cache data', async () => {
+            redisService.getValue.mockResolvedValueOnce('invalid-json');
+
+            await expect(service.findById('1'))
+                .rejects.toThrow(InternalServerErrorException);
+        });
+
+        it('should handle database failures', async () => {
+            prismaService.user.findUnique.mockRejectedValueOnce(new Error('DB error'));
+
+            await expect(service.findById('1'))
+                .rejects.toThrow(InternalServerErrorException);
+        });
+    });
+    describe('Token Refresh', () => {
+        it('should handle expired refresh tokens', async () => {
+            const expiredToken = jwt.sign(
+                { sub: '1', exp: Math.floor(Date.now() / 1000) - 3600 },
+                'invalid-secret'
+            );
+
+            await expect(service.refreshToken({ refreshToken: expiredToken }))
+                .rejects.toThrow(UnauthorizedException);
+        });
+
+        it('should handle invalid token payloads', async () => {
+            const invalidToken = jwt.sign(
+                { invalid: 'payload' },
+                process.env.JWT_REFRESH_SECRET!
+            );
+
+            await expect(service.refreshToken({ refreshToken: invalidToken }))
+                .rejects.toThrow(UnauthorizedException);
+        });
+    });
+    describe('Transaction Rollback', () => {
+        it('should handle partial rollback failures', async () => {
+            prismaService.user.delete.mockRejectedValueOnce(new Error('Delete failed'));
+            neo4jService.executeQuery.mockRejectedValueOnce(new Error('Neo4j error'));
+            redisService.deleteKey.mockRejectedValueOnce(new Error('Redis error'));
+
+            await expect(service.rollbackOperations('1'))
+                .resolves.toBeUndefined();
+        });
+    });
+
+    describe('Email Verification', () => {
+        it('should detect email decryption failures', async () => {
+            const dto = { email: 'test@example.com', password: 'password' };
+            const user = {
+                ...mockUser,
+                emailHash: 'invalid_encrypted_data'
+            };
+
+            prismaService.user.findUnique.mockResolvedValue(user);
+            cryptoService.decrypt.mockImplementationOnce(() => {
+                throw new Error('Decryption failed');
+            });
+
+            await expect(service.login(dto))
+                .rejects.toThrow(UnauthorizedException);
+        });
+    });
+
     describe('data consistency', () => {
         it('should maintain consistency between SQL and Neo4j', async () => {
             const dto = {
@@ -213,6 +334,36 @@ describe('AuthService', () => {
 
             await expect(service.register(dto)).rejects.toThrow(InternalServerErrorException);
             expect(prismaService.user.delete).toHaveBeenCalled();
+        });
+    });
+    describe('Token Generation', () => {
+        it('should handle JWT signing failures', async () => {
+            const mockError = new Error('JWT signing failed');
+
+            const accessTokenSpy = jest.spyOn(AuthService.prototype as any, 'generateAccessToken')
+                .mockImplementationOnce(() => {
+                    throw mockError;
+                });
+
+            await expect(service.generateTokens(mockUser))
+                .rejects.toThrow(InternalServerErrorException);
+            expect(accessTokenSpy).toHaveBeenCalled();
+
+            const refreshTokenSpy = jest.spyOn(AuthService.prototype as any, 'generateRefreshToken')
+                .mockImplementationOnce(() => {
+                    throw mockError;
+                });
+
+            await expect(service.generateTokens(mockUser))
+                .rejects.toThrow(InternalServerErrorException);
+            expect(refreshTokenSpy).toHaveBeenCalled();
+        });
+
+        it('should handle database update failures', async () => {
+            prismaService.user.update.mockRejectedValueOnce(new Error('DB error'));
+
+            await expect(service.generateTokens(mockUser))
+                .rejects.toThrow(InternalServerErrorException);
         });
     });
 });

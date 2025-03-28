@@ -1,8 +1,8 @@
-import { ExtractJwt, Strategy, StrategyOptionsWithoutRequest, StrategyOptionsWithRequest } from 'passport-jwt';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import {AuthService} from "../auth/auth.service";
-import * as process from "node:process";
+import {JWT_CONSTANTS} from "./jwt.constants";
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
@@ -10,7 +10,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
         super({
             jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
             ignoreExpiration: false,
-            secretOrKey: process.env.JWT_REFRESH_SECRET_KEY || '',
+            secretOrKey: JWT_CONSTANTS.ACCESS_SECRET || '',
         });
     }
 
@@ -30,7 +30,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') 
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: process.env.JWT_SECRET_KEY || '',
+            secretOrKey: JWT_CONSTANTS.ACCESS_SECRET || '',
         });
     }
 

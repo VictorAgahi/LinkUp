@@ -1,19 +1,27 @@
-import {Body, Controller, Get, UseGuards} from "@nestjs/common";
-import UserService from "./user.service";
-import {AccessTokenDto} from "./dto/accessToken.dto";
-import {AuthGuard} from "@nestjs/passport";
-
-
+import { Body, Controller, Get, Patch, Delete, Req, UseGuards } from "@nestjs/common";
+import { UserService } from "./user.service";
+import { RequestAccessTokenDto } from "./dto/request.accessToken.dto";
+import { AuthGuard } from "@nestjs/passport";
 
 @Controller('user')
-export class UserController
-{
-    constructor(private userService: UserService){}
+export class UserController {
+    constructor(private userService: UserService) {}
 
     @Get('info')
     @UseGuards(AuthGuard('jwt-access'))
-    async login(dto: AccessTokenDto) {
-        return this.userService.me(dto);
+    async info(@Req() req: RequestAccessTokenDto) {
+        return this.userService.info(req);
     }
 
+    @Patch('update')
+    @UseGuards(AuthGuard('jwt-access'))
+    async updateUser(@Req() req: RequestAccessTokenDto, @Body() updateData: any) {
+        return this.userService.updateUser(req, updateData);
+    }
+
+    @Delete('delete')
+    @UseGuards(AuthGuard('jwt-access'))
+    async deleteUser(@Req() req: RequestAccessTokenDto) {
+        return this.userService.deleteUser(req);
+    }
 }
