@@ -1,5 +1,5 @@
 import {
-    BadRequestException,
+    BadRequestException, ConflictException,
     Injectable,
     InternalServerErrorException,
     Logger,
@@ -11,6 +11,7 @@ import {Neo4jService} from "../common/neo4j/neo4j.service";
 import {RedisService} from "../common/redis/redis.service";
 import {CryptoService} from "../common/crypto/crypto.service";
 import {RequestAccessTokenDto} from "./dto/request.accessToken.dto";
+import {PrismaClientKnownRequestError} from "@prisma/client/runtime/client";
 
 
 @Injectable()
@@ -111,38 +112,43 @@ export class UserService implements OnModuleInit
 
     async updateUser(dto: RequestAccessTokenDto, updateData: Partial<{ firstName: string; lastName: string; username: string }>) {
         try {
-            if (Object.keys(updateData).length === 0) {
-                const updatedUser = await this.prisma.user.findUnique({
-                    where: { id: dto.userId }});
-                if (!updatedUser) {
-                    throw new NotFoundException(`User with ID ${dto.userId} not found.`);
-                }
-                const decryptedUser = {
-                    firstName: this.crypto.decrypt(updatedUser.firstName),
-                    lastName: this.crypto.decrypt(updatedUser.lastName),
-                    username: this.crypto.decrypt(updatedUser.username),
-                };
-                return decryptedUser
-            }
             const userId = dto.userId;
             const cacheKey = `user:${userId}`;
 
-            this.logger.log(`Updating user ${userId} in PostgreSQL and Neo4j.`);
+            if (Object.keys(updateData).length === 0) {
+                throw new BadRequestException('No update data provided');
+            }
 
-            const encryptedData = {
-                firstName: updateData.firstName ? await this.crypto.encrypt(updateData.firstName) : undefined,
-                lastName: updateData.lastName ? await this.crypto.encrypt(updateData.lastName) : undefined,
-                username: updateData.username ? await this.crypto.encrypt(updateData.username) : undefined,
-            };
+            if (updateData.username) {
+                const encryptedUsername = await this.crypto.encrypt(updateData.username);
+                const existingUser = await this.prisma.user.findFirst({
+                    where: {
+                        username: encryptedUsername,
+                        id: { not: userId }
+                    }
+                });
+
+                if (existingUser) {
+                    throw new ConflictException('This username is already taken');
+                }
+            }
+
+            const encryptedData: Record<string, string> = {};
+
+            if (updateData.firstName) {
+                encryptedData.firstName = await this.crypto.encrypt(updateData.firstName);
+            }
+            if (updateData.lastName) {
+                encryptedData.lastName = await this.crypto.encrypt(updateData.lastName);
+            }
+            if (updateData.username) {
+                encryptedData.username = await this.crypto.encrypt(updateData.username);
+            }
 
             const updatedUser = await this.prisma.user.update({
                 where: { id: userId },
                 data: encryptedData,
-                select: {
-                    firstName: true,
-                    lastName: true,
-                    username: true,
-                },
+                select: { firstName: true, lastName: true, username: true },
             });
 
             const decryptedUser = {
@@ -153,10 +159,16 @@ export class UserService implements OnModuleInit
 
             await this.redis.setValue(cacheKey, JSON.stringify(decryptedUser), 3600);
 
-            this.logger.log(`User ${userId} updated successfully.`);
             return decryptedUser;
         } catch (error) {
-            this.logger.error(`Error updating user`);
+            if (error instanceof PrismaClientKnownRequestError) {
+                if (error.code === 'P2025') {
+                    throw new NotFoundException(`User with ID ${dto.userId} not found`);
+                }
+            }
+            if (error instanceof ConflictException || error instanceof BadRequestException) {
+                throw error;
+            }
             throw new InternalServerErrorException('Failed to update user.');
         }
     }

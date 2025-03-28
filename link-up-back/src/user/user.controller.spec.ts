@@ -59,7 +59,6 @@ describe('UserController', () => {
 
             expect(userService.info).toHaveBeenCalledWith({
                 userId: '123',
-                username: 'johndoe',
             });
         });
     });
@@ -76,7 +75,7 @@ describe('UserController', () => {
             });
 
             expect(userService.updateUser).toHaveBeenCalledWith(
-                { userId: '123', username: 'johndoe' },
+                { userId: '123' },
                 updateData
             );
         });
@@ -92,7 +91,6 @@ describe('UserController', () => {
 
             expect(userService.deleteUser).toHaveBeenCalledWith({
                 userId: '123',
-                username: 'johndoe',
             });
         });
     });

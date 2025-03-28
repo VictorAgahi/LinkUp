@@ -15,13 +15,13 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     }
 
     async validate(payload: any) {
-        const { sub: userId, username } = payload;
+        const { sub: userId } = payload;
 
         const user = await this.authService.findById(userId);
         if (!user) {
             throw new UnauthorizedException('Invalid refresh token');
         }
-        return { userId, username };
+        return { userId };
     }
 }
 @Injectable()
@@ -35,12 +35,12 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') 
     }
 
     async validate(payload: any) {
-        const { sub: userId, username } = payload;
+        const { sub: userId } = payload;
 
         const user = await this.authService.findById(userId);
         if (!user) {
             throw new UnauthorizedException('User not found or invalid');
         }
-        return { userId, username };
+        return { userId };
     }
 }

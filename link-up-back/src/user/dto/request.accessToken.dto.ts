@@ -5,12 +5,7 @@ export class RequestAccessTokenDto {
     @IsNotEmpty()
     userId: string;
 
-    @IsString()
-    @IsNotEmpty()
-    username: string;
-
-    constructor(userId: string, username: string) {
+    constructor(userId: string) {
         this.userId = userId;
-        this.username = username;
     }
 }

@@ -10,17 +10,16 @@ export async function getToken(key: string): Promise<string | null> {
     try {
         return await SecureStore.getItemAsync(key);
     } catch (error) {
-        console.error(`Erreur lors de la récupération de ${key}:`, error);
+        console.error(`Error retrieving ${key}:`, error);
         return null;
     }
 }
-
 
 export async function deleteToken(key: string) {
     try {
         await SecureStore.deleteItemAsync(key);
     } catch (error) {
-        console.error(`Erreur lors de la suppression de ${key}:`, error);
+        console.error(`Error deleting ${key}:`, error);
     }
 }
 
@@ -29,6 +28,6 @@ export async function clearAllTokens() {
         await deleteToken('accessToken');
         await deleteToken('refreshToken');
     } catch (error) {
-        console.error('Erreur lors de la suppression des tokens:', error);
+        console.error('Error clearing all tokens:', error);
     }
 }

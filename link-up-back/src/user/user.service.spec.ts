@@ -1,6 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
-import {InternalServerErrorException, NotFoundException, UnauthorizedException} from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    InternalServerErrorException,
+    NotFoundException,
+    UnauthorizedException
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -9,6 +15,7 @@ import { RedisService } from '../common/redis/redis.service';
 import { CryptoService } from '../common/crypto/crypto.service';
 import { RequestAccessTokenDto } from "./dto/request.accessToken.dto";
 import {stringify} from "ts-jest";
+import {PrismaClientKnownRequestError} from "@prisma/client/runtime/client";
 
 const mockUser: User = {
     id: '1',
@@ -22,11 +29,11 @@ const mockUser: User = {
     updatedAt: new Date(),
 };
 
-// Mocks pour PrismaService, Neo4jService, RedisService et CryptoService
 const mockPrismaService = {
     user: {
         create: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
     },
@@ -95,7 +102,7 @@ describe('UserService', () => {
         it('should return user info', async () => {
             prismaService.user.findUnique.mockResolvedValue(mockUser);
 
-            const result = await service.info(new RequestAccessTokenDto(mockUser.id, mockUser.username));
+            const result = await service.info(new RequestAccessTokenDto(mockUser.id));
 
             expect(result).toEqual({
                 firstName: 'Test',
@@ -116,7 +123,7 @@ describe('UserService', () => {
         it('should throw a NotFoundException if user not found', async () => {
             prismaService.user.findUnique.mockResolvedValue(null);
 
-            await expect(service.info(new RequestAccessTokenDto("", mockUser.username)))
+            await expect(service.info(new RequestAccessTokenDto("")))
                 .rejects
                 .toThrowError(new NotFoundException(`User with ID  not found.`));
         });
@@ -129,7 +136,7 @@ describe('UserService', () => {
             };
             redisService.getValue.mockResolvedValue(JSON.stringify(cachedData));
 
-            const result = await service.info(new RequestAccessTokenDto('1', 'testuser'));
+            const result = await service.info(new RequestAccessTokenDto('1'));
 
             expect(result).toEqual(cachedData);
             expect(prismaService.user.findUnique).not.toHaveBeenCalled();
@@ -138,6 +145,18 @@ describe('UserService', () => {
 
 
     describe('updateUser', () => {
+
+        const mockUserId = '1';
+        const mockUser = {
+            id: mockUserId,
+            username: 'testuser',
+            firstName: 'Test',
+            lastName: 'User'
+        };
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+        });
         it('should update user info successfully', async () => {
             const mockUser = { id: '1', username: 'testuser', firstName: 'Test', lastName: 'User' };
             const updatedUser = { ...mockUser, firstName: 'Updated' };
@@ -161,7 +180,7 @@ describe('UserService', () => {
             redisService.setValue.mockResolvedValue(true);
 
             const result = await service.updateUser(
-                new RequestAccessTokenDto(mockUser.id, mockUser.username),
+                new RequestAccessTokenDto(mockUser.id),
                 { firstName: 'Updated' }
             );
 
@@ -178,28 +197,30 @@ describe('UserService', () => {
             );
         });
 
-        it('should throw InternalServerErrorException if update fails', async () => {
-            const mockUser = { id: '1', username: 'testuser', firstName: 'Test', lastName: 'User' };
-            const errorMessage = 'Error updating user info';
-
-            cryptoService.encrypt.mockImplementation(() => Promise.resolve('encrypted'));
-            prismaService.user.update.mockRejectedValue(new Error(errorMessage));
+        it('should handle encryption failure', async () => {
+            cryptoService.encrypt.mockImplementation(() => {
+                throw new Error('Encryption failed');
+            });
 
             await expect(service.updateUser(
-                new RequestAccessTokenDto(mockUser.id, mockUser.username),
-                { firstName: 'Updated' }
-            )).rejects.toThrow(new InternalServerErrorException('Failed to update user.'));
+                new RequestAccessTokenDto('1'),
+                { firstName: 'New' }
+            )).rejects.toThrow(InternalServerErrorException);
         });
 
-        it('should throw InternalServerErrorException if update fails', async () => {
-            const mockUser = { id: '1', username: 'testuser', firstName: 'Test', lastName: 'User' };
-            const errorMessage = 'Error updating user info';
+        it('should throw InternalServerErrorException for generic Prisma errors', async () => {
+            const prismaError = new PrismaClientKnownRequestError('Database error', {
+                code: 'P2002',
+                clientVersion: '1.0'
+            });
 
-            prismaService.user.update.mockRejectedValue(new Error(errorMessage));
+            prismaService.user.update.mockRejectedValue(prismaError);
+            cryptoService.encrypt.mockResolvedValue('encrypted');
 
-            await expect(service.updateUser(new RequestAccessTokenDto(mockUser.id, mockUser.username), { firstName: 'Updated' }))
-                .rejects
-                .toThrowError(new InternalServerErrorException('Failed to update user.'));
+            await expect(service.updateUser(
+                new RequestAccessTokenDto(mockUserId),
+                { firstName: 'Updated' }
+            )).rejects.toThrow(new InternalServerErrorException('Failed to update user.'));
         });
         it('should update multiple fields when provided', async () => {
             const updateData = {
@@ -217,7 +238,7 @@ describe('UserService', () => {
             });
 
             const result = await service.updateUser(
-                new RequestAccessTokenDto('1', 'testuser'),
+                new RequestAccessTokenDto('1'),
                 updateData
             );
 
@@ -228,26 +249,84 @@ describe('UserService', () => {
             });
         });
 
-        it('should handle encryption failure', async () => {
-            cryptoService.encrypt.mockImplementation(() => {
-                throw new Error('Encryption failed');
-            });
+        it('should throw BadRequestException when no update data provided', async () => {
+            await expect(service.updateUser(
+                new RequestAccessTokenDto(mockUserId),
+                {}
+            )).rejects.toThrow(new BadRequestException('No update data provided'));
+        });
+        it('should throw ConflictException when username is already taken', async () =>
+        {
+            const currentUserId = '1';
+            const existingUserId = '2';
+            const existingUsername = 'takenusername';
+
+            const existingUser = {
+                id: existingUserId,
+                username: existingUsername,
+                firstName: 'Existing',
+                lastName: 'User'
+            };
+
+            prismaService.user.findFirst.mockResolvedValue(existingUser);
+            cryptoService.encrypt.mockImplementation((text) =>
+                Promise.resolve(`encrypted${text}`)
+            );
 
             await expect(service.updateUser(
-                new RequestAccessTokenDto('1', 'testuser'),
-                { firstName: 'New' }
-            )).rejects.toThrow(InternalServerErrorException);
+                new RequestAccessTokenDto(currentUserId),
+                { username: existingUsername }
+            )).rejects.toThrow(
+                new ConflictException('This username is already taken')
+            );
+
+            expect(cryptoService.encrypt).toHaveBeenCalledWith(existingUsername);
+            expect(prismaService.user.findFirst).toHaveBeenCalledWith({
+                where: {
+                    username: 'encryptedtakenusername',
+                    id: { not: currentUserId }
+                }
+            });
         });
+
+        afterEach(() => {
+            jest.clearAllMocks();
+        });
+        it('should throw NotFoundException when user does not exist', async () => {
+            const prismaError = new PrismaClientKnownRequestError('Not found', {
+                code: 'P2025',
+                clientVersion: '1.0'
+            });
+
+            prismaService.user.update.mockRejectedValue(prismaError);
+
+            await expect(service.updateUser(
+                new RequestAccessTokenDto(mockUserId),
+                { firstName: 'Updated' }
+            )).rejects.toThrow(new NotFoundException(`User with ID ${mockUserId} not found`));
+        });
+        it('should handle unexpected errors', async () => {
+            const error = new Error('Unexpected error');
+            prismaService.user.update.mockRejectedValue(error);
+            cryptoService.encrypt.mockResolvedValue('encrypted');
+
+            await expect(service.updateUser(
+                new RequestAccessTokenDto(mockUserId),
+                { firstName: 'Updated' }
+            )).rejects.toThrow(new InternalServerErrorException('Failed to update user.'));
+        });
+
     });
 
     describe('deleteUser', () => {
+
         it('should delete a user successfully', async () => {
             const mockUser = { id: '1', username: 'testuser', firstName: 'Test', lastName: 'User' };
             prismaService.user.findUnique.mockResolvedValue(mockUser);
             neo4jService.executeQuery.mockResolvedValue({});
             redisService.deleteKey.mockResolvedValue(1);
 
-            const result = await service.deleteUser(new RequestAccessTokenDto(mockUser.id, mockUser.username));
+            const result = await service.deleteUser(new RequestAccessTokenDto(mockUser.id));
 
             expect(result).toEqual({ message: `User ${mockUser.id} deleted successfully.` });
             expect(prismaService.user.delete).toHaveBeenCalledWith({ where: { id: mockUser.id } });
@@ -259,7 +338,7 @@ describe('UserService', () => {
             const mockUserId = '1';
             prismaService.user.findUnique.mockResolvedValue(null);
 
-            await expect(service.deleteUser(new RequestAccessTokenDto(mockUserId, 'testuser')))
+            await expect(service.deleteUser(new RequestAccessTokenDto(mockUserId)))
                 .rejects
                 .toThrowError(new NotFoundException(`User with ID ${mockUserId} not found.`));
         });
@@ -269,7 +348,7 @@ describe('UserService', () => {
             prismaService.user.findUnique.mockResolvedValue(mockUser);
             prismaService.user.delete.mockRejectedValue(new Error('Database error'));
 
-            await expect(service.deleteUser(new RequestAccessTokenDto(mockUser.id, mockUser.username)))
+            await expect(service.deleteUser(new RequestAccessTokenDto(mockUser.id)))
                 .rejects
                 .toThrowError(new InternalServerErrorException('Failed to delete user.'));
         });
@@ -277,7 +356,7 @@ describe('UserService', () => {
             prismaService.user.findUnique.mockResolvedValue(mockUser);
             neo4jService.executeQuery.mockRejectedValue(new Error('Neo4j error'));
 
-            await expect(service.deleteUser(new RequestAccessTokenDto('1', 'testuser')))
+            await expect(service.deleteUser(new RequestAccessTokenDto('1')))
                 .rejects.toThrow(InternalServerErrorException);
         });
 
@@ -285,7 +364,7 @@ describe('UserService', () => {
             prismaService.user.findUnique.mockResolvedValue(mockUser);
             redisService.deleteKey.mockRejectedValue(new Error('Redis error'));
 
-            await expect(service.deleteUser(new RequestAccessTokenDto('1', 'testuser')))
+            await expect(service.deleteUser(new RequestAccessTokenDto('1')))
                 .rejects.toThrow(InternalServerErrorException);
         });
     });
@@ -309,31 +388,24 @@ describe('UserService', () => {
     });
     describe('Edge Cases', () => {
         it('should handle empty update in updateUser', async () => {
-            const result = await service.updateUser(
-                new RequestAccessTokenDto('1', 'testuser'),
-                {}
-            );
-
-            expect(result).toEqual({
-                firstName: 'Test',
-                lastName: 'User',
-                username: 'testuser'
-            });
+            await expect(service.updateUser(new RequestAccessTokenDto(mockUser.id), {}))
+                .rejects
+                .toThrowError(new NotFoundException('No update data provided'));
         });
 
         it('should handle empty update in updateUser + user not found', async () => {
             prismaService.user.findUnique.mockResolvedValue(null);
 
-            await expect(service.updateUser(new RequestAccessTokenDto("", mockUser.username), {}))
+            await expect(service.updateUser(new RequestAccessTokenDto(""), {}))
                 .rejects
-                .toThrowError(new NotFoundException('Failed to update user.'));
+                .toThrowError(new NotFoundException('No update data provided'));
         });
 
         it('should handle null cached value in info', async () => {
             redisService.getValue.mockResolvedValue(null);
             prismaService.user.findUnique.mockResolvedValue(mockUser);
 
-            const result = await service.info(new RequestAccessTokenDto('1', 'testuser'));
+            const result = await service.info(new RequestAccessTokenDto('1'));
 
             expect(result).toBeDefined();
         });

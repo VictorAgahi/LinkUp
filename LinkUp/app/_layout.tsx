@@ -10,6 +10,7 @@ import { PortalHost } from '@rn-primitives/portal';
 import { ThemeToggle } from '~/components/ThemeToggle';
 import { setAndroidNavigationBar } from '~/lib/android-navigation-bar';
 import { AuthProvider, useAuth } from "~/lib/auth/authContext";
+import {QueryClient} from "@tanstack/query-core";
 
 const LIGHT_THEME: Theme = {
     ...DefaultTheme,
@@ -19,6 +20,7 @@ const DARK_THEME: Theme = {
     ...DarkTheme,
     colors: NAV_THEME.dark,
 };
+
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -35,7 +37,6 @@ function Layout() {
         if (auth.isAuthenticated === null) {
             return;
         }
-
         if (auth.isAuthenticated) {
             router.replace('/home');
         } else {

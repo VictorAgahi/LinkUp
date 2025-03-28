@@ -201,7 +201,7 @@ export class AuthService implements OnModuleInit {
 
     private generateAccessToken(user: User) {
         try {
-            const payload = { sub: user.id, username: user.username };
+            const payload = { sub: user.id };
             return sign(
                 payload,
                 process.env.JWT_ACCESS_SECRET!,
@@ -238,7 +238,7 @@ export class AuthService implements OnModuleInit {
 
     private generateRefreshToken(user: User) {
         try {
-            const payload = { sub: user.id, username: user.username };
+            const payload = { sub: user.id };
             return sign(
                 payload,
                 process.env.JWT_REFRESH_SECRET!,

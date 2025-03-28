@@ -11,10 +11,12 @@ import { ThemeToggle } from '~/components/ThemeToggle';
 import { SettingsToggle } from '~/components/SettingsToggle';
 import { useColorScheme } from '~/lib/useColorScheme';
 import { NAV_THEME } from '~/lib/constants';
+import {QueryClient} from "@tanstack/query-core";
+import {QueryClientProvider} from "@tanstack/react-query";
 
 const Tab = createBottomTabNavigator();
 const StackNav = createStackNavigator();
-
+const queryClient = new QueryClient();
 const TabNavigator = () => {
     const { isDarkColorScheme } = useColorScheme();
     const theme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
@@ -71,7 +73,9 @@ const TabNavigator = () => {
 };
 
 const HomeLayout = () => {
-    return <TabNavigator />;
+    return <QueryClientProvider client={queryClient}>
+    <TabNavigator />
+    </QueryClientProvider>;
 };
 
 export default HomeLayout;

@@ -10,22 +10,21 @@ export class UserController {
     @Get('info')
     @UseGuards(AuthGuard('jwt-access'))
     async info(@Req() req: any): Promise<any> {
-        const dto = new RequestAccessTokenDto(req.user.userId, req.user.username);
-        console.log(dto.userId, dto.username);
+        const dto = new RequestAccessTokenDto(req.user.userId);
         return this.userService.info(dto);
     }
 
     @Patch('update')
     @UseGuards(AuthGuard('jwt-access'))
     async updateUser(@Req() req, @Body() updateData: any): Promise<any> {
-        const dto = new RequestAccessTokenDto(req.user.userId, req.user.username);
+        const dto = new RequestAccessTokenDto(req.user.userId);
         return this.userService.updateUser(dto, updateData)
     }
 
     @Delete('delete')
     @UseGuards(AuthGuard('jwt-access'))
     async deleteUser(@Req() req: any): Promise<any>  {
-        const dto = new RequestAccessTokenDto(req.user.userId, req.user.username);
+        const dto = new RequestAccessTokenDto(req.user.userId);
         return this.userService.deleteUser(dto)
     }
 }
