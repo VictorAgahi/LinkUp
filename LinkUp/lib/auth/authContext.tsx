@@ -3,6 +3,7 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { getToken, saveToken, deleteToken } from '~/lib/store/secureStore';
 import { Alert } from 'react-native';
+import { BACKEND_URL } from '@env';
 
 interface AuthContextType {
     isAuthenticated: boolean | null;
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
 
                 const isTokenValid = validateToken(accessToken);
-                console.log('Token valide :', isTokenValid);
+                console.log('Valid token:', isTokenValid);
 
                 if (isTokenValid) {
                     setIsAuthenticated(true);
@@ -42,21 +43,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     if (newAccessToken) {
                         await saveToken('accessToken', newAccessToken);
                         setIsAuthenticated(true);
-                        console.log('Token rafraîchi avec succès.');
+                        console.log('Token successfully refreshed.');
                     } else {
                         setIsAuthenticated(false);
                         await deleteToken('accessToken');
                         await deleteToken('refreshToken');
-                        console.log('Échec du rafraîchissement du token.');
+                        console.log('Failed to refresh token.');
                     }
                     setIsRefreshing(false);
                 } else {
                     setIsAuthenticated(false);
-                    console.log('Aucun refreshToken disponible ou échec de la vérification.');
+                    console.log('No refreshToken available or verification failed.');
                 }
 
             } catch (error) {
-                console.error('Erreur lors de la vérification de l\'authentification:', error);
+                console.error('Error during authentication check:', error);
                 setIsAuthenticated(false);
             }
         };
@@ -67,7 +68,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const handleRegister = async (form: any) => {
         try {
             console.log('Attempting to register user...');
-            const response = await axios.post('http://localhost:3000/auth/register', form, {
+            let API = BACKEND_URL;
+            if (!BACKEND_URL) {
+                throw new Error('BACKEND_URL not found in .env');
+            }
+            const response = await axios.post(API + "/auth/register", form, {
                 headers: { 'Content-Type': 'application/json' },
             });
 
@@ -86,7 +91,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const handleLogin = async (email: string, password: string) => {
         try {
             console.log('Attempting to login...');
-            const response = await axios.post('http://localhost:3000/auth/login', {
+            let API = BACKEND_URL;
+            if (!BACKEND_URL) {
+                throw new Error('BACKEND_URL not found in .env');
+            }
+            const response = await axios.post(API + "/auth/login", {
                 email,
                 password,
             }, {
@@ -115,10 +124,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const handleAxiosError = (error: any) => {
         if (axios.isAxiosError(error)) {
             console.error('Axios error:', error.response?.data || error.message);
-            Alert.alert('Erreur', error.response?.data?.message || 'Une erreur est survenue.');
+            Alert.alert('Error', error.response?.data?.message || 'An error occurred.');
         } else {
             console.error('Unknown error:', error);
-            Alert.alert('Erreur', 'Une erreur inconnue est survenue.');
+            Alert.alert('Error', 'An unknown error occurred.');
         }
     };
 
@@ -133,23 +142,28 @@ const validateToken = (token: string): boolean => {
     try {
         const decoded = jwtDecode<{ exp: number }>(token);
         const isValid = decoded.exp * 1000 > Date.now();
-        console.log('Token expiré ?', !isValid);
+        console.log('Expired token?', !isValid);
         return isValid;
     } catch (error) {
-        console.error('Erreur lors du décodage du token:', error);
+        console.error('Error decoding token:', error);
         return false;
     }
 };
 
 const refreshAccessToken = async (refreshToken: string): Promise<string | null> => {
     try {
-        const response = await axios.post('http://localhost:3000/auth/refresh-token', { refreshToken });
+        console.log('Attempting to refresh access token...');
+        let API = BACKEND_URL;
+        if (!BACKEND_URL) {
+            throw new Error('BACKEND_URL not found in .env');
+        }
+        const response = await axios.post(API + "/auth/refresh-token", { refreshToken });
         if (response.status === 200) {
-            console.log('Token d\'accès renouvelé');
+            console.log('Access token refreshed');
             return response.data.accessToken;
         }
     } catch (error) {
-        console.error('Erreur lors du rafraîchissement du token:', error);
+        console.error('Error refreshing token:', error);
         return null;
     }
     return null;

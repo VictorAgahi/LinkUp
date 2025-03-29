@@ -5,6 +5,7 @@ import {Neo4jModule} from "./common/neo4j/neo4j.module";
 import {AuthModule} from "./auth/auth.module";
 import {CryptoModule} from "./common/crypto/crypto.module";
 import {UserModule} from "./user/user.module";
+import {WebSocketModule} from "./common/websockets/websocket.module";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import {UserModule} from "./user/user.module";
     Neo4jModule,
     CryptoModule,
     UserModule,
+    WebSocketModule,
   ],
   controllers: [],
   providers: [],

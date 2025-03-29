@@ -8,6 +8,7 @@ import { Neo4jService } from '../common/neo4j/neo4j.service';
 import { RedisService } from '../common/redis/redis.service';
 import { CryptoService } from '../common/crypto/crypto.service';
 import * as jwt from 'jsonwebtoken';
+import {UserService} from "../user/user.service";
 
 const mockUser: User = {
     id: '1',
@@ -48,6 +49,7 @@ const mockCryptoService = {
     decrypt: jest.fn((value: string) => value.replace('_encrypted', '')),
 };
 
+
 jest.mock('bcrypt', () => ({
     ...jest.requireActual('bcrypt'),
     hash: jest.fn().mockImplementation((password: string) => Promise.resolve('hashedPassword')),
@@ -60,6 +62,7 @@ describe('AuthService', () => {
     let neo4jService: typeof mockNeo4jService;
     let redisService: typeof mockRedisService;
     let cryptoService: typeof mockCryptoService;
+    let userService: UserService;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -78,6 +81,7 @@ describe('AuthService', () => {
         neo4jService = mockNeo4jService;
         redisService = mockRedisService;
         cryptoService = mockCryptoService;
+        userService = module.get<UserService>(UserService);
 
         (bcrypt.hash as jest.Mock).mockClear();
         (bcrypt.compare as jest.Mock).mockClear();
@@ -257,14 +261,14 @@ describe('AuthService', () => {
         it('should handle corrupted cache data', async () => {
             redisService.getValue.mockResolvedValueOnce('invalid-json');
 
-            await expect(service.findById('1'))
+            await expect(userService.findById('1'))
                 .rejects.toThrow(InternalServerErrorException);
         });
 
         it('should handle database failures', async () => {
             prismaService.user.findUnique.mockRejectedValueOnce(new Error('DB error'));
 
-            await expect(service.findById('1'))
+            await expect(userService.findById('1'))
                 .rejects.toThrow(InternalServerErrorException);
         });
     });

@@ -1,12 +1,12 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import {AuthService} from "../auth/auth.service";
 import {JWT_CONSTANTS} from "./jwt.constants";
+import {UserService} from "../user/user.service";
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
-    constructor(private authService: AuthService) {
+    constructor(private userService: UserService) {
         super({
             jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
             ignoreExpiration: false,
@@ -17,7 +17,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     async validate(payload: any) {
         const { sub: userId } = payload;
 
-        const user = await this.authService.findById(userId);
+        const user = await this.userService.findById(userId);
         if (!user) {
             throw new UnauthorizedException('Invalid refresh token');
         }
@@ -26,7 +26,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
 }
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') {
-    constructor(private authService: AuthService) {
+    constructor(private userService: UserService) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
@@ -37,7 +37,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') 
     async validate(payload: any) {
         const { sub: userId } = payload;
 
-        const user = await this.authService.findById(userId);
+        const user = await this.userService.findById(userId);
         if (!user) {
             throw new UnauthorizedException('User not found or invalid');
         }

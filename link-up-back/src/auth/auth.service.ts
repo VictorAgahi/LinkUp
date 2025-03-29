@@ -79,10 +79,9 @@ export class AuthService implements OnModuleInit {
 
             try {
                 await this.neo4j.executeQuery(
-                    `CREATE (u:User {id: $id, emailHash: $emailHash})`,
+                    `CREATE (u:User {id: $id})`,
                     {
                         id: user.id,
-                        emailHash: encryptedData.emailHash,
                     },
                 );
             } catch (neo4jError) {
@@ -212,30 +211,6 @@ export class AuthService implements OnModuleInit {
             throw new InternalServerErrorException('Error generating access token');
         }
     }
-    async findById(userId: string): Promise<User | null> {
-        try {
-            const cachedUser = await this.redis.getValue(`user:${userId}`);
-            if (cachedUser) {
-                this.logger.log(`User found in Redis: ${userId}`);
-                return JSON.parse(cachedUser);
-            }
-
-            const user = await this.prisma.user.findUnique({
-                where: { id: userId },
-            });
-
-            if (!user) {
-                this.logger.warn(`User not found in PostgreSQL: ${userId}`);
-                return null;
-            }
-            await this.cacheUserData(user);
-            return user;
-        } catch (error) {
-            this.logger.error('Error finding user by ID');
-            throw new InternalServerErrorException('Error finding user');
-        }
-    }
-
     private generateRefreshToken(user: User) {
         try {
             const payload = { sub: user.id };

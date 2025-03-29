@@ -13,6 +13,7 @@ import { useColorScheme } from '~/lib/useColorScheme';
 import { NAV_THEME } from '~/lib/constants';
 import {QueryClient} from "@tanstack/query-core";
 import {QueryClientProvider} from "@tanstack/react-query";
+import {WebsocketProvider} from "~/lib/websockets/WebSocketContext";
 
 const Tab = createBottomTabNavigator();
 const StackNav = createStackNavigator();
@@ -65,7 +66,7 @@ const TabNavigator = () => {
                 options={{
                     tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
                     title: 'Paramètres',
-                    headerLeft: () => null, // Désactive le bouton settings dans l'header
+                    headerLeft: () => null,
                 }}
             />
         </Tab.Navigator>
@@ -73,9 +74,13 @@ const TabNavigator = () => {
 };
 
 const HomeLayout = () => {
-    return <QueryClientProvider client={queryClient}>
-    <TabNavigator />
-    </QueryClientProvider>;
+    return (
+    <WebsocketProvider>
+            <QueryClientProvider client={queryClient}>
+                <TabNavigator />
+            </QueryClientProvider>
+    </WebsocketProvider>
+    )
 };
 
 export default HomeLayout;

@@ -7,6 +7,7 @@ import { useColorScheme } from '~/lib/useColorScheme';
 import { useAuth } from '~/lib/auth/authContext';
 import { getToken } from '~/lib/store/secureStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {BACKEND_URL} from "@env";
 
 interface UserInfo {
   firstName: string;
@@ -33,8 +34,7 @@ export default function SettingsScreen() {
       const token = await getToken("accessToken");
       if (!token) throw new Error("No access token found");
 
-      const URL = process.env.BACKEND_URL || "http://localhost:3000";
-      const response = await fetch(`${URL}/user/info`, {
+      const response = await fetch(`${BACKEND_URL}/user/info`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,

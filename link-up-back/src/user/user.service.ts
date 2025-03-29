@@ -12,115 +12,213 @@ import {RedisService} from "../common/redis/redis.service";
 import {CryptoService} from "../common/crypto/crypto.service";
 import {RequestAccessTokenDto} from "./dto/request.accessToken.dto";
 import {PrismaClientKnownRequestError} from "@prisma/client/runtime/client";
-
+import {User} from "@prisma/client";
+import {AuthService} from "../auth/auth.service";
+import {UserDataDto} from "./dto/userData.dto";
+import {stringify} from "ts-jest";
 
 @Injectable()
-export class UserService implements OnModuleInit
-{
+export class UserService implements OnModuleInit {
     readonly logger = new Logger(UserService.name);
 
     constructor(
         private prisma: PrismaService,
         private neo4j: Neo4jService,
         private redis: RedisService,
-        private crypto: CryptoService)
-    {}
+        private crypto: CryptoService,
+        private authService: AuthService,
+    ) {}
+    private userSockets = new Map<string, string[]>();
+    private userDataMap = new Map<string, UserDataDto>();
 
     onModuleInit() {
         this.checkEnvVariables();
     }
 
-    private checkEnvVariables() {
-            const requiredEnv = [
-                'JWT_ACCESS_SECRET',
-                'JWT_REFRESH_SECRET',
-                'JWT_REFRESH_EXPIRES_IN',
-                'JWT_ACCESS_EXPIRES_IN',
-                'ENCRYPTION_KEY'
-            ];
-            const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+    async addConnectedUser(userId: string, socketId: string) {
+        try {
+            let data: UserDataDto;
+            const cachedData = await this.redis.getValue(`user:${userId}`);
 
-            if (missingEnv.length > 0) {
-                const errorMessage = `Missing environment variables: ${missingEnv.join(', ')}`;
-                this.logger.error(errorMessage);
-                throw new Error(errorMessage);
+            if (cachedData) {
+                data = JSON.parse(cachedData);
+            } else {
+                const user = await this.prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { firstName: true, lastName: true, username: true }
+                });
+
+                if (!user) throw new Error("User not found");
+
+                data = {
+                    ...user,
+                    firstName: this.crypto.decrypt(user.firstName),
+                    lastName: this.crypto.decrypt(user.lastName),
+                    username: this.crypto.decrypt(user.username),
+                };
+
+                await this.redis.setValue(`user:${userId}`, JSON.stringify(data), 3600);
             }
+
+            const sockets = this.userSockets.get(userId) || [];
+            if (!sockets.includes(socketId)) {
+                sockets.push(socketId);
+            }
+            this.userSockets.set(userId, sockets);
+
+            this.userDataMap.set(userId, data);
+
+            this.logger.log(`User ${userId} connected (${sockets.length} sockets)`);
+        } catch (error) {
+            this.logger.error(`Connection error for user ${userId}: ${error.message}`);
+        }
     }
 
-    async info(dto: RequestAccessTokenDto) {
+    removeConnectedUser(socketId: string) {
+        let targetUserId: string | undefined;
+        for (const [userId, sockets] of this.userSockets.entries()) {
+            if (sockets.includes(socketId)) {
+                targetUserId = userId;
+                break;
+            }
+        }
+
+        if (!targetUserId) return;
+
+        const updatedSockets = this.userSockets.get(targetUserId)?.filter(id => id !== socketId) || [];
+        this.userSockets.set(targetUserId, updatedSockets);
+
+        if (updatedSockets.length === 0) {
+            this.userDataMap.delete(targetUserId); // Supprimer seulement si plus de sockets
+        }
+
+        this.logger.log(`User ${targetUserId} disconnected (${updatedSockets.length} sockets left)`);
+    }
+
+
+    getConnectedUsers() {
+        return Array.from(this.userDataMap.entries()).map(([userId, data]) => ({
+            id: userId,
+            ...data
+        }));
+    }
+
+    async findById(userId: string): Promise<User | null> {
         try {
-            this.logger.log(`Received RequestAccessTokenDto`);
-
-            const userId = dto.userId;
-            if (!userId) {
-                this.logger.error("Error: userId is undefined in DTO!");
-                throw new NotFoundException(`User with ID ${userId} not found.`);
-            }
-            const cacheKey = `user:${userId}`;
-            this.logger.log(`Checking cache for key: ${cacheKey}`);
-
-            const cachedUser = await this.redis.getValue(cacheKey);
+            const cachedUser = await this.redis.getValue(`user:${userId}`);
             if (cachedUser) {
-                this.logger.log(`User ${userId} found in cache.`);
-                const parsedUser = JSON.parse(cachedUser);
-                this.logger.log(`Cached user data: ${JSON.stringify(parsedUser)}`);
-                this.logger.log(`Returning decrypted cached user: ${JSON.stringify(parsedUser)}`);
-                return parsedUser;
-
+                this.logger.log(`User found in Redis: ${userId}`);
+                return JSON.parse(cachedUser);
             }
 
-            this.logger.warn(`User ${userId} not found in cache. Querying PostgreSQL...`);
             const user = await this.prisma.user.findUnique({
                 where: { id: userId },
-                select: {
-                    firstName: true,
-                    lastName: true,
-                    username: true,
-                },
             });
 
             if (!user) {
-                this.logger.error(`User with ID ${userId} not found in PostgreSQL.`);
-                throw new NotFoundException(`User with ID ${userId} not found.`);
+                this.logger.warn(`User not found in PostgreSQL: ${userId}`);
+                return null;
+            }
+            await this.authService.cacheUserData(user);
+            return user;
+        } catch (error) {
+            this.logger.error('Error finding user by ID');
+            throw new InternalServerErrorException('Error finding user');
+        }
+    }
+
+    private checkEnvVariables() {
+        this.logger.log('Checking required environment variables');
+        const requiredEnv = [
+            'JWT_ACCESS_SECRET',
+            'JWT_REFRESH_SECRET',
+            'JWT_REFRESH_EXPIRES_IN',
+            'JWT_ACCESS_EXPIRES_IN',
+            'ENCRYPTION_KEY'
+        ];
+
+        const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+        if (missingEnv.length > 0) {
+            const errorMessage = `Missing environment variables: ${missingEnv.join(', ')}`;
+            this.logger.error(errorMessage);
+            throw new Error(errorMessage);
+        }
+        this.logger.log('All required environment variables are present');
+    }
+
+    async info(dto: RequestAccessTokenDto) {
+        this.logger.log(`Starting info retrieval for user ID: ${dto.userId}`);
+        try {
+            const userId = dto.userId;
+            if (!userId) {
+                this.logger.error('User ID is missing in request');
+                throw new BadRequestException('User ID is required');
             }
 
-            this.logger.log(`User ${userId} found in PostgreSQL. Raw data: ${JSON.stringify(user)}`);
+            const cacheKey = `user:${userId}`;
+            this.logger.debug(`Checking cache with key: ${cacheKey}`);
 
+            const cachedUser = await this.redis.getValue(cacheKey);
+            if (cachedUser) {
+                const data = JSON.parse(cachedUser)
+                const decryptedUser = {
+                    ...data,
+                    id: userId
+                };
+                this.logger.debug('Cache hit - Returning cached user data');
+                this.logger.debug('Data : ' + JSON.stringify(decryptedUser));
+                return decryptedUser;
+            }
+
+            this.logger.debug('Cache miss - Querying database');
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { firstName: true, lastName: true, username: true },
+            });
+
+            if (!user) {
+                this.logger.warn(`User not found in database: ${userId}`);
+                throw new NotFoundException(`User with ID ${userId} not found`);
+            }
+
+            this.logger.debug('Decrypting sensitive data');
             const decryptedUser = {
+                id: userId,
                 firstName: this.crypto.decrypt(user.firstName),
                 lastName: this.crypto.decrypt(user.lastName),
                 username: this.crypto.decrypt(user.username),
             };
 
-            this.logger.log(`Decrypted user data: ${JSON.stringify(decryptedUser)}`);
-
+            this.logger.debug('Updating cache with decrypted data : ' + decryptedUser);
             await this.redis.setValue(cacheKey, JSON.stringify(decryptedUser), 3600);
-            this.logger.log(`User ${userId} cached successfully.`);
-
             return decryptedUser;
         } catch (error) {
-            this.logger.error(`Error processing user info: ${error.message}`);
-
-            if (error instanceof InternalServerErrorException || error instanceof NotFoundException) {
+            this.logger.error(`Info retrieval failed: ${error.message}`, error.stack);
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
                 throw error;
             }
-
-            throw new InternalServerErrorException("An unexpected error occurred while fetching user info");
+            throw new InternalServerErrorException('Failed to retrieve user information');
         }
     }
 
-
     async updateUser(dto: RequestAccessTokenDto, updateData: Partial<{ firstName: string; lastName: string; username: string }>) {
+        this.logger.log(`Starting update for user ID: ${dto.userId}`);
         try {
             const userId = dto.userId;
-            const cacheKey = `user:${userId}`;
+            if (!userId) {
+                this.logger.error('Missing user ID in update request');
+                throw new BadRequestException('User ID is required');
+            }
 
             if (Object.keys(updateData).length === 0) {
+                this.logger.warn('Update attempted with empty payload');
                 throw new BadRequestException('No update data provided');
             }
 
             if (updateData.username) {
-                const encryptedUsername = await this.crypto.encrypt(updateData.username);
+                this.logger.debug(`Checking username availability: ${updateData.username}`);
+                const encryptedUsername = this.crypto.deterministicEncrypt(updateData.username);
+
                 const existingUser = await this.prisma.user.findFirst({
                     where: {
                         username: encryptedUsername,
@@ -129,10 +227,12 @@ export class UserService implements OnModuleInit
                 });
 
                 if (existingUser) {
+                    this.logger.warn(`Username already taken: ${updateData.username}`);
                     throw new ConflictException('This username is already taken');
                 }
             }
 
+            this.logger.debug('Encrypting updated fields');
             const encryptedData: Record<string, string> = {};
 
             if (updateData.firstName) {
@@ -151,60 +251,74 @@ export class UserService implements OnModuleInit
                 select: { firstName: true, lastName: true, username: true },
             });
 
+            this.logger.debug('Decrypting updated user data');
             const decryptedUser = {
                 firstName: this.crypto.decrypt(updatedUser.firstName),
                 lastName: this.crypto.decrypt(updatedUser.lastName),
                 username: this.crypto.decrypt(updatedUser.username),
             };
 
+            const cacheKey = `user:${userId}`;
+            this.logger.debug('Updating cache with new data');
             await this.redis.setValue(cacheKey, JSON.stringify(decryptedUser), 3600);
 
             return decryptedUser;
         } catch (error) {
+            this.logger.error(`Update failed: ${error.message}`);
+
             if (error instanceof PrismaClientKnownRequestError) {
+                this.logger.error(`Prisma error: ${error.code}`);
                 if (error.code === 'P2025') {
                     throw new NotFoundException(`User with ID ${dto.userId} not found`);
                 }
             }
+
             if (error instanceof ConflictException || error instanceof BadRequestException) {
                 throw error;
             }
-            throw new InternalServerErrorException('Failed to update user.');
+
+            throw new InternalServerErrorException('Failed to update user profile');
         }
     }
 
     async deleteUser(dto: RequestAccessTokenDto) {
+        this.logger.log(`Starting deletion for user ID: ${dto.userId}`);
         try {
             const userId = dto.userId;
-            const cacheKey = `user:${userId}`;
+            if (!userId) {
+                this.logger.error('Missing user ID in deletion request');
+                throw new BadRequestException('User ID is required');
+            }
 
-            this.logger.log(`Deleting user with ID ${userId} from PostgreSQL, Neo4j, and Redis.`);
-
+            this.logger.debug('Checking user existence');
             const user = await this.prisma.user.findUnique({ where: { id: userId } });
             if (!user) {
-                this.logger.error(`User with ID ${userId} not found.`);
-                throw new NotFoundException(`User with ID ${userId} not found.`);
+                this.logger.warn(`User not found for deletion: ${userId}`);
+                throw new NotFoundException(`User with ID ${userId} not found`);
             }
 
+            this.logger.debug('Deleting from PostgreSQL');
             await this.prisma.user.delete({ where: { id: userId } });
-
+            this.logger.debug('Deleting from Neo4j');
             await this.neo4j.executeQuery(`
-            MATCH (u:User {id: $userId})
-            DETACH DELETE u
-        `, { userId });
+                MATCH (u:User {id: $userId})
+                DETACH DELETE u
+            `, { userId });
 
+            const cacheKey = `user:${userId}`;
+            this.logger.debug('Clearing cache');
             await this.redis.deleteKey(cacheKey);
 
-            this.logger.log(`User ${userId} deleted successfully.`);
-            return { message: `User ${userId} deleted successfully.` };
+            this.logger.log(`User ${userId} successfully deleted`);
+            return { message: `User ${userId} deleted successfully` };
         } catch (error) {
+            this.logger.error(`Deletion failed: ${error.message}`, error.stack);
+
             if (error instanceof NotFoundException) {
-                this.logger.error(`User Not found`);
-                throw new NotFoundException(error.message);
+                throw error;
             }
-            this.logger.error(`Error deleting user`);
-            throw new InternalServerErrorException('Failed to delete user.');
+
+            throw new InternalServerErrorException('Failed to delete user');
         }
     }
-
 }
