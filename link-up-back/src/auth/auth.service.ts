@@ -135,7 +135,6 @@ export class AuthService implements OnModuleInit {
             this.logger.error('Error caching user data');
         }
     }
-
     async login(dto: LoginDto) {
         try {
             this.logger.log('Starting login process for email: ' + dto.email);
@@ -150,10 +149,8 @@ export class AuthService implements OnModuleInit {
                 this.logger.warn('Login failed: Invalid email or user not found for email: ' + dto.email);
                 throw new UnauthorizedException('Invalid credentials');
             }
-
             const isPasswordValid = await bcrypt.compare(dto.password, user.password);
             const isEmailValid = await this.verifyEmail(user.emailHash, dto.email);
-
             if (!isPasswordValid || !isEmailValid) {
                 this.logger.warn('Login failed: Invalid password or email mismatch for email: ' + dto.email);
                 throw new UnauthorizedException('Invalid credentials');

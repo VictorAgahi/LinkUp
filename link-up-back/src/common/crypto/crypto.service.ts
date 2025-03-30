@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
     createCipheriv,
     createDecipheriv,
@@ -14,6 +14,7 @@ export type EncryptedData = {
 
 @Injectable()
 export class CryptoService {
+    private readonly logger: Logger | null;
     private readonly algorithm = 'aes-256-gcm';
     private readonly key: Buffer;
 
@@ -26,7 +27,9 @@ export class CryptoService {
         if (this.key.length !== 32) {
             throw new Error('Invalid encryption key length (must be 256-bit/32 bytes)');
         }
+        this.logger = process.env.NODE_ENV === 'test' ? null : new Logger(CryptoService.name);
     }
+
 
     deterministicEncrypt(data: string): string {
         const iv = createHash('sha256')
@@ -89,7 +92,9 @@ export class CryptoService {
 
             return decrypted;
         } catch (error) {
-            console.error(`[CryptoService] Decryption error: ${error.message}`);
+            if (this.logger != null){
+                this.logger.error(`[CryptoService] Decryption error: ${error.message}`);
+            }
             throw new Error(`Decryption failed: ${error.message}`);
         }
     }

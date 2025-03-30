@@ -35,7 +35,7 @@ describe('UserController', () => {
             controllers: [UserController],
             providers: [{ provide: UserService, useValue: mockUserService }],
         })
-            .overrideGuard(AuthGuard('jwt-access')) // Remplace l'AuthGuard par un mock
+            .overrideGuard(AuthGuard('jwt-access'))
             .useValue(new MockAuthGuard())
             .compile();
 

@@ -13,13 +13,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             password: process.env.REDIS_PASSWORD || undefined,
             db: Number(process.env.REDIS_DB) || 0,
         });
-
         this.redisClient.on('connect', () => {
             this.logger.log('✅ Connected to Redis');
         });
 
         this.redisClient.on('error', (err) => {
-            this.logger.error(`❌ Redis connection error: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, err);
+            this.logger.error(`❌ Redis connection error: `, err);
         });
     }
 

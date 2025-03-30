@@ -7,7 +7,7 @@ dotenv.config();
 @Injectable()
 export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     private readonly driver: Driver;
-    private readonly logger = new Logger(Neo4jService.name); // Logger NestJS
+    private readonly logger = new Logger(Neo4jService.name);
 
     constructor() {
         const NEO4J_URI = process.env.NEO4J_URI || "bolt://localhost:7687";

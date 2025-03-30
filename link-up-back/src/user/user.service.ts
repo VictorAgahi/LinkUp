@@ -15,7 +15,7 @@ import {PrismaClientKnownRequestError} from "@prisma/client/runtime/client";
 import {User} from "@prisma/client";
 import {AuthService} from "../auth/auth.service";
 import {UserDataDto} from "./dto/userData.dto";
-import {stringify} from "ts-jest";
+
 
 @Injectable()
 export class UserService implements OnModuleInit {
@@ -39,16 +39,21 @@ export class UserService implements OnModuleInit {
         try {
             let data: UserDataDto;
             const cachedData = await this.redis.getValue(`user:${userId}`);
-
             if (cachedData) {
                 data = JSON.parse(cachedData);
-            } else {
+            }
+            else {
                 const user = await this.prisma.user.findUnique({
                     where: { id: userId },
                     select: { firstName: true, lastName: true, username: true }
                 });
 
-                if (!user) throw new Error("User not found");
+                console.log("User fetched:", user);
+
+                if (!user) {
+                    this.logger.warn(`User not found: ${userId}`);
+                    throw new NotFoundException("User not found");
+                }
 
                 data = {
                     ...user,
@@ -69,11 +74,13 @@ export class UserService implements OnModuleInit {
             this.userDataMap.set(userId, data);
 
             this.logger.log(`User ${userId} connected (${sockets.length} sockets)`);
-        } catch (error) {
+        }
+        catch (error) {
+            if (error instanceof NotFoundException) throw error;
             this.logger.error(`Connection error for user ${userId}: ${error.message}`);
+            throw new InternalServerErrorException(error.message);
         }
     }
-
     removeConnectedUser(socketId: string) {
         let targetUserId: string | undefined;
         for (const [userId, sockets] of this.userSockets.entries()) {
@@ -86,14 +93,18 @@ export class UserService implements OnModuleInit {
         if (!targetUserId) return;
 
         const updatedSockets = this.userSockets.get(targetUserId)?.filter(id => id !== socketId) || [];
-        this.userSockets.set(targetUserId, updatedSockets);
 
         if (updatedSockets.length === 0) {
-            this.userDataMap.delete(targetUserId); // Supprimer seulement si plus de sockets
+            this.userSockets.delete(targetUserId);
+            this.userDataMap.delete(targetUserId);
+            console.log(`User ${targetUserId} removed. Current users:`, this.getConnectedUsers());
+        } else {
+            this.userSockets.set(targetUserId, updatedSockets);
         }
 
         this.logger.log(`User ${targetUserId} disconnected (${updatedSockets.length} sockets left)`);
     }
+
 
 
     getConnectedUsers() {
@@ -146,13 +157,14 @@ export class UserService implements OnModuleInit {
         this.logger.log('All required environment variables are present');
     }
 
+
     async info(dto: RequestAccessTokenDto) {
         this.logger.log(`Starting info retrieval for user ID: ${dto.userId}`);
         try {
             const userId = dto.userId;
             if (!userId) {
                 this.logger.error('User ID is missing in request');
-                throw new BadRequestException('User ID is required');
+                throw new NotFoundException('User ID is required');
             }
 
             const cacheKey = `user:${userId}`;
@@ -160,14 +172,9 @@ export class UserService implements OnModuleInit {
 
             const cachedUser = await this.redis.getValue(cacheKey);
             if (cachedUser) {
-                const data = JSON.parse(cachedUser)
-                const decryptedUser = {
-                    ...data,
-                    id: userId
-                };
+                const data = JSON.parse(cachedUser);
                 this.logger.debug('Cache hit - Returning cached user data');
-                this.logger.debug('Data : ' + JSON.stringify(decryptedUser));
-                return decryptedUser;
+                return data;
             }
 
             this.logger.debug('Cache miss - Querying database');
@@ -189,7 +196,7 @@ export class UserService implements OnModuleInit {
                 username: this.crypto.decrypt(user.username),
             };
 
-            this.logger.debug('Updating cache with decrypted data : ' + decryptedUser);
+            this.logger.debug('Updating cache with decrypted data');
             await this.redis.setValue(cacheKey, JSON.stringify(decryptedUser), 3600);
             return decryptedUser;
         } catch (error) {
@@ -201,23 +208,32 @@ export class UserService implements OnModuleInit {
         }
     }
 
-    async updateUser(dto: RequestAccessTokenDto, updateData: Partial<{ firstName: string; lastName: string; username: string }>) {
+    async updateUser(
+        dto: RequestAccessTokenDto,
+        updateData: Partial<{ firstName: string; lastName: string; username: string }>
+    ) {
         this.logger.log(`Starting update for user ID: ${dto.userId}`);
+
         try {
             const userId = dto.userId;
+
             if (!userId) {
                 this.logger.error('Missing user ID in update request');
-                throw new BadRequestException('User ID is required');
+                throw new NotFoundException('User ID is required');
             }
 
             if (Object.keys(updateData).length === 0) {
                 this.logger.warn('Update attempted with empty payload');
-                throw new BadRequestException('No update data provided');
+                throw new NotFoundException('No update data provided');
             }
 
             if (updateData.username) {
-                this.logger.debug(`Checking username availability: ${updateData.username}`);
-                const encryptedUsername = this.crypto.deterministicEncrypt(updateData.username);
+                this.logger.debug(
+                    `Checking username availability: ${updateData.username}`
+                );
+                const encryptedUsername = this.crypto.deterministicEncrypt(
+                    updateData.username
+                );
 
                 const existingUser = await this.prisma.user.findFirst({
                     where: {
@@ -263,23 +279,24 @@ export class UserService implements OnModuleInit {
             await this.redis.setValue(cacheKey, JSON.stringify(decryptedUser), 3600);
 
             return decryptedUser;
-        } catch (error) {
-            this.logger.error(`Update failed: ${error.message}`);
-
+        } catch (error: PrismaClientKnownRequestError | ConflictException | BadRequestException | any) {
             if (error instanceof PrismaClientKnownRequestError) {
-                this.logger.error(`Prisma error: ${error.code}`);
-                if (error.code === 'P2025') {
-                    throw new NotFoundException(`User with ID ${dto.userId} not found`);
-                }
+                this.handlePrismaError(error, dto.userId);
             }
-
-            if (error instanceof ConflictException || error instanceof BadRequestException) {
-                throw error;
+            if (error.message.includes("Encryption")) {
+                throw new InternalServerErrorException(error.message);
             }
-
-            throw new InternalServerErrorException('Failed to update user profile');
+            throw error;
         }
     }
+    private handlePrismaError(error: PrismaClientKnownRequestError, userId: string) {
+        this.logger.error(`Prisma error: ${error.code}`);
+        if (error.code === 'P2025') {
+            throw new NotFoundException(`User with ID ${userId} not found`);
+        }
+        throw error;
+    }
+
 
     async deleteUser(dto: RequestAccessTokenDto) {
         this.logger.log(`Starting deletion for user ID: ${dto.userId}`);
@@ -287,14 +304,14 @@ export class UserService implements OnModuleInit {
             const userId = dto.userId;
             if (!userId) {
                 this.logger.error('Missing user ID in deletion request');
-                throw new BadRequestException('User ID is required');
+                throw new BadRequestException('User ID is required.');
             }
 
             this.logger.debug('Checking user existence');
             const user = await this.prisma.user.findUnique({ where: { id: userId } });
             if (!user) {
                 this.logger.warn(`User not found for deletion: ${userId}`);
-                throw new NotFoundException(`User with ID ${userId} not found`);
+                throw new NotFoundException(`User with ID ${userId} not found.`);
             }
 
             this.logger.debug('Deleting from PostgreSQL');
@@ -310,7 +327,7 @@ export class UserService implements OnModuleInit {
             await this.redis.deleteKey(cacheKey);
 
             this.logger.log(`User ${userId} successfully deleted`);
-            return { message: `User ${userId} deleted successfully` };
+            return { message: `User ${userId} deleted successfully.` };
         } catch (error) {
             this.logger.error(`Deletion failed: ${error.message}`, error.stack);
 
@@ -318,7 +335,7 @@ export class UserService implements OnModuleInit {
                 throw error;
             }
 
-            throw new InternalServerErrorException('Failed to delete user');
+            throw new InternalServerErrorException('Failed to delete user.');
         }
     }
 }

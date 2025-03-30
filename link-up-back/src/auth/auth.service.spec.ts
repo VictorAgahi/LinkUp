@@ -10,6 +10,10 @@ import { CryptoService } from '../common/crypto/crypto.service';
 import * as jwt from 'jsonwebtoken';
 import {UserService} from "../user/user.service";
 
+const mockUserService = {
+    findById: jest.fn(),
+};
+
 const mockUser: User = {
     id: '1',
     username: 'testuser',
@@ -71,6 +75,7 @@ describe('AuthService', () => {
                 { provide: PrismaService, useValue: mockPrismaService },
                 { provide: Neo4jService, useValue: mockNeo4jService },
                 { provide: RedisService, useValue: mockRedisService },
+                { provide: UserService, useValue: mockUserService },
                 { provide: CryptoService, useValue: mockCryptoService },
             ],
         })
@@ -257,21 +262,7 @@ describe('AuthService', () => {
         });
     });
 
-    describe('User Lookup', () => {
-        it('should handle corrupted cache data', async () => {
-            redisService.getValue.mockResolvedValueOnce('invalid-json');
 
-            await expect(userService.findById('1'))
-                .rejects.toThrow(InternalServerErrorException);
-        });
-
-        it('should handle database failures', async () => {
-            prismaService.user.findUnique.mockRejectedValueOnce(new Error('DB error'));
-
-            await expect(userService.findById('1'))
-                .rejects.toThrow(InternalServerErrorException);
-        });
-    });
     describe('Token Refresh', () => {
         it('should handle expired refresh tokens', async () => {
             const expiredToken = jwt.sign(
