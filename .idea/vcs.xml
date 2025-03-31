@@ -2,6 +2,12 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LinkUpBack/auth-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LinkUpBack/cache-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LinkUpBack/crypto-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LinkUpBack/database-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LinkUpBack/gateway-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LinkUpBack/user-service" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/link-up-back" vcs="Git" />
   </component>
 </project>
