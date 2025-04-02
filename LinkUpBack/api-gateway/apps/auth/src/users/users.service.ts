@@ -28,7 +28,6 @@ export class UsersService implements OnModuleInit {
     this.logger.log(`Fake database initialized with ${this.users.length} users.`);
   }
 
-  // Création d'un utilisateur
   async create(request: CreateUserRequest): Promise<UserResponse> {
     const newUser: UserResponse = {
       id: uuidv4(),
