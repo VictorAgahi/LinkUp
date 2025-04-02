@@ -1,0 +1,59 @@
+syntax="proto3";
+
+package auth;
+
+service UsersService{
+    rpc CreateUser (CreateUserRequest) returns (UserResponse);
+    rpc GetUser (GetUserRequest) returns (UserResponse);
+    rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
+    rpc DeleteUser (DeleteUserRequest) returns (UserResponse);
+    rpc GetAllUsers (stream GetAllUsersRequest) returns (stream GetAllUsersResponse);
+}
+message DeleteUserRequest {
+  string id = 1;
+}
+message CreateUserRequest {
+  string first_name = 1;
+  string last_name = 2;
+  string username = 3;
+  string email = 4;
+  string password = 5;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+message UpdateUserRequest {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string username = 4;
+  string email = 5;
+}
+
+message UserResponse {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string username = 4;
+  string email = 5;
+}
+
+message GetAllUsersRequest 
+{
+    int32 page = 1;
+    int32 limit = 2;
+}
+message GetAllUsersResponse {
+    repeated User users = 1;
+    int32 total = 2;
+}
+
+message User {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string username = 4;
+  string email = 5;
+  string password = 6;
+}
