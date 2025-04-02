@@ -17,6 +17,7 @@ import { Observable, of, from } from 'rxjs';
 @Controller()
 @UsersServiceControllerMethods()
 export class UsersController implements UsersServiceController {
+  
   private readonly logger = new Logger(UsersController.name);
 
   constructor(private readonly usersService: UsersService) {}

@@ -1,11 +1,17 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateUserRequest, DeleteUserRequest, UpdateUserRequest, UserResponse } from '@app/common';
-
+import { ClientGrpc } from '@nestjs/microservices';
+import {CRYPTO} from '@app/common';
+import { Inject } from '@nestjs/common';
+import { CryptoServiceClient } from '@app/common';
+import { CRYPTO_SERVICE_NAME } from '@app/common';
 @Injectable()
 export class UsersService implements OnModuleInit {
   private readonly logger = new Logger(UsersService.name);
   private users: UserResponse[] = [];
+
+
 
   onModuleInit() {
     this.logger.log('Initializing fake database...');

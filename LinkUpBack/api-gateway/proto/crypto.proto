@@ -1,0 +1,45 @@
+syntax="proto3";
+
+package crypto;
+
+
+service CryptoService
+{
+    rpc encrypt (EncryptRequest) returns (EncryptResponse);
+    rpc decrypt (DecryptRequest) returns (DecryptResponse);
+    rpc hash (HashRequest) returns (HashResponse);
+    rpc verify (VerifyRequest) returns (VerifyResponse);
+    rpc deterministeEncrypt (DeterministicEncryptRequest) returns (DeterministicEncryptResponse);
+}
+
+message EncryptRequest {
+    string plaintext = 1;
+}
+message EncryptResponse {
+    string ciphertext = 1;
+}
+message DecryptRequest {
+    string ciphertext = 1;
+}
+message DecryptResponse {
+    string plaintext = 1;
+}
+message HashRequest {
+    string plaintext = 1;
+}
+message HashResponse {
+    string hash = 1;
+}  
+message VerifyRequest {
+    string plaintext = 1;
+    string hash = 2;
+}
+message VerifyResponse {
+    bool is_valid = 1;
+}
+message DeterministicEncryptRequest {
+    string plaintext = 1;
+}
+message DeterministicEncryptResponse {
+    string ciphertext = 1;
+}

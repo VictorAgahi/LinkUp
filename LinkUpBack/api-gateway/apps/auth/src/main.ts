@@ -14,6 +14,7 @@ async function bootstrap() {
     options: {
       protoPath: join(__dirname, '../auth.proto'),
       package: AUTH_PACKAGE_NAME,
+      url: 'localhost:5004',
     } 
   });
   await app.listen();
