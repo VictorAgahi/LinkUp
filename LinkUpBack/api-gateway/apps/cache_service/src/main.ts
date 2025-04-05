@@ -1,19 +1,21 @@
 import { NestFactory } from '@nestjs/core';
-import { Crypto_ServiceModule } from './crypto_service.module';
+
 import { MicroserviceOptions, Transport} from '@nestjs/microservices';
-import { CRYPTO, CRYPTO_PACKAGE_NAME, CRYPTO_PORT } from '@app/common';
+
 import { join } from 'path';
+import { CacheModule } from './cache.module';
+import { CACHE_PACKAGE_NAME, CACHE_PORT } from '@app/common';
 
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    Crypto_ServiceModule,
+    CacheModule,
     {
       transport: Transport.GRPC,
       options: {
-        protoPath: join(__dirname, '../crypto.proto'),
-        package: CRYPTO_PACKAGE_NAME,
-        url: CRYPTO_PORT,
+        protoPath: join(__dirname, '../cache.proto'),
+        package: CACHE_PACKAGE_NAME,
+        url: CACHE_PORT,
       },
     }
   );

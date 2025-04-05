@@ -37,6 +37,19 @@
         "watchAssets": true
       }
     },
+    "cache_service": {
+      "type": "application",
+      "root": "apps/cache_service",
+      "entryFile": "src/main",
+      "sourceRoot": "./",
+      "compilerOptions": {
+        "tsConfigPath": "apps/cache_service/tsconfig.app.json",
+        "assets": [
+          "proto/*.proto"
+        ],
+        "watchAssets": true
+      }
+    },
     "common": {
       "type": "library",
       "root": "libs/common",
@@ -53,6 +66,32 @@
       "sourceRoot": "./",
       "compilerOptions": {
         "tsConfigPath": "apps/crypto_service/tsconfig.app.json",
+        "assets": [
+          "proto/*.proto"
+        ],
+        "watchAssets": true
+      }
+    },
+    "database_service": {
+      "type": "application",
+      "root": "apps/database_service",
+      "entryFile": "src/main",
+      "sourceRoot": "./",
+      "compilerOptions": {
+        "tsConfigPath": "apps/database_service/tsconfig.app.json",
+        "assets": [
+          "proto/*.proto"
+        ],
+        "watchAssets": true
+      }
+    },
+    "user_service": {
+      "type": "application",
+      "root": "apps/user_service",
+      "entryFile": "src/main",
+      "sourceRoot": "./",
+      "compilerOptions": {
+        "tsConfigPath": "apps/user_service/tsconfig.app.json",
         "assets": [
           "proto/*.proto"
         ],

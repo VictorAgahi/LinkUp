@@ -1,0 +1,1 @@
+export const AUTH_PORT = process.env.AUTH_PORT || 'auth:5005';

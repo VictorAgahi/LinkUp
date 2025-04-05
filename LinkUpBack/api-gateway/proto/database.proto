@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package database;
+
+service DatabaseService {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc CheckUserExists(CheckUserExistsRequest) returns (CheckUserExistsResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc CreateConversation(CreateConversationRequest) returns (CreateConversationResponse);
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  rpc GetMessageHistory(GetMessageHistoryRequest) returns (GetMessageHistoryResponse);
+  rpc LikeUser(LikeUserRequest) returns (LikeUserResponse);
+  rpc CheckMutualLike(CheckMutualLikeRequest) returns (CheckMutualLikeResponse);
+  rpc GetLikedUsers(GetLikedUsersRequest) returns (GetLikedUsersResponse);
+  rpc MarkNotificationsAsRead(MarkNotificationsAsReadRequest) returns (MarkNotificationsAsReadResponse);
+  rpc GenerateJwtToken(GenerateJwtTokenRequest) returns (GenerateJwtTokenResponse);
+  rpc VerifyJwtToken(VerifyJwtTokenRequest) returns (VerifyJwtTokenResponse);
+  rpc CreateUserRelation(CreateUserRelationRequest) returns (CreateUserRelationResponse);
+  rpc GetNearbyUsers(GetNearbyUsersRequest) returns (GetNearbyUsersResponse);
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+  rpc FilterConversations(FilterConversationsRequest) returns (FilterConversationsResponse);
+  rpc VerifyDataSecurity(VerifyDataSecurityRequest) returns (VerifyDataSecurityResponse);
+}
+
+message CreateUserRequest {
+  string firstname = 1;
+  string lastname = 2;
+  string username = 3;
+  string email = 4;
+  string password = 5;
+  string phone_number = 6;
+}
+
+message CreateUserResponse {
+  string user_id = 1;
+}
+
+message CheckUserExistsRequest {
+  string email = 1;
+  string phone_number = 2;
+}
+
+message CheckUserExistsResponse {
+  bool exists = 1;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  string firstname = 2;
+  string lastname = 3;
+  string email = 4;
+  string phoneNumber = 5;
+  string password = 6;
+}
+
+message UpdateUserResponse {
+  bool success = 1;
+}
+
+message CreateConversationRequest {
+  string user_id_1 = 1;
+  string user_id_2 = 2;
+}
+
+message CreateConversationResponse {
+  string conversation_id = 1;
+}
+
+message SendMessageRequest {
+  string conversation_id = 1;
+  string user_id = 2;
+  string message = 3;
+}
+
+message SendMessageResponse {
+  bool success = 1;
+}
+
+message GetMessageHistoryRequest {
+  string conversation_id = 1;
+}
+
+message GetMessageHistoryResponse {
+  repeated string messages = 1;
+}
+
+message LikeUserRequest {
+  string user_id = 1;
+  string target_user_id = 2;
+}
+
+message LikeUserResponse {
+  bool success = 1;
+}
+
+message CheckMutualLikeRequest {
+  string user_id = 1;
+  string target_user_id = 2;
+}
+
+message CheckMutualLikeResponse {
+  bool is_mutual = 1;
+}
+
+message GetLikedUsersRequest {
+  string user_id = 1;
+}
+
+message GetLikedUsersResponse {
+  repeated string liked_user_ids = 1;
+}
+
+message MarkNotificationsAsReadRequest {
+  string user_id = 1;
+}
+
+message MarkNotificationsAsReadResponse {
+  bool success = 1;
+}
+
+message GenerateJwtTokenRequest {
+  string user_id = 1;
+}
+
+message GenerateJwtTokenResponse {
+  string jwt_token = 1;
+}
+
+message VerifyJwtTokenRequest {
+  string jwt_token = 1;
+}
+
+message VerifyJwtTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+}
+
+message CreateUserRelationRequest {
+  string user_id = 1;
+  string related_user_id = 2;
+}
+
+message CreateUserRelationResponse {
+  bool success = 1;
+}
+
+message GetNearbyUsersRequest {
+  string user_id = 1;
+  float latitude = 2;
+  float longitude = 3;
+}
+
+message GetNearbyUsersResponse {
+  repeated string nearby_user_ids = 1;
+}
+
+message SearchUsersRequest {
+  string query = 1;
+}
+
+message SearchUsersResponse {
+  repeated string user_ids = 1;
+}
+
+message FilterConversationsRequest {
+  string user_id = 1;
+  string filter = 2;
+}
+
+message FilterConversationsResponse {
+  repeated string conversation_ids = 1;
+}
+
+message VerifyDataSecurityRequest {
+  string user_id = 1;
+}
+
+message VerifyDataSecurityResponse {
+  bool is_secure = 1;
+}

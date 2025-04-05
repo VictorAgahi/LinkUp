@@ -8,7 +8,7 @@
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
 import { Observable } from "rxjs";
 
-export const protobufPackagex = "crypto";
+export const protobufPackageCrypto = "crypto";
 
 export interface EncryptRequest {
   plaintext: string;

@@ -1,0 +1,1 @@
+export const CACHE_PORT = process.env.CACHE_PORT || 'cache_service:5003';

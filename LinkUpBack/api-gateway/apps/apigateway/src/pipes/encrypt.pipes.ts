@@ -3,7 +3,7 @@ import { CryptoServiceClient } from '@app/common';
 import { ClientGrpc } from "@nestjs/microservices";
 import { Inject } from '@nestjs/common';
 import { Observable, lastValueFrom } from 'rxjs';
-import { CRYPTO_SERVICE } from "../users/constants";
+import { CRYPTO_SERVICE } from "../utils/constants";
 import { CRYPTO_SERVICE_NAME } from "@app/common";
 import { Logger } from "@nestjs/common";
 

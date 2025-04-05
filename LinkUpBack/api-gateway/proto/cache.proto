@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package cache;
+
+service CacheService {
+  rpc CheckUserInCache (CheckUserInCacheRequest) returns (CheckUserInCacheResponse);
+  rpc AddUserToCache (AddUserToCacheRequest) returns (AddUserToCacheResponse);
+  rpc UpdateUserInCache (UpdateUserInCacheRequest) returns (UpdateUserInCacheResponse);
+  rpc RemoveUserFromCache (RemoveUserFromCacheRequest) returns (RemoveUserFromCacheResponse);
+
+  rpc CheckTokenInCache (CheckTokenInCacheRequest) returns (CheckTokenInCacheResponse);
+  rpc RemoveTokenFromCache (RemoveTokenFromCacheRequest) returns (RemoveTokenFromCacheResponse);
+
+  rpc CheckMessagesInCache (CheckMessagesInCacheRequest) returns (CheckMessagesInCacheResponse);
+  rpc AddMessagesToCache (AddMessagesToCacheRequest) returns (AddMessagesToCacheResponse);
+  rpc RemoveMessagesFromCache (RemoveMessagesFromCacheRequest) returns (RemoveMessagesFromCacheResponse);
+
+  rpc CheckNotificationsInCache (CheckNotificationsInCacheRequest) returns (CheckNotificationsInCacheResponse);
+  rpc AddNotificationsToCache (AddNotificationsToCacheRequest) returns (AddNotificationsToCacheResponse);
+  rpc RemoveNotificationsFromCache (RemoveNotificationsFromCacheRequest) returns (RemoveNotificationsFromCacheResponse);
+
+  rpc CheckUserRelationInCache (CheckUserRelationInCacheRequest) returns (CheckUserRelationInCacheResponse);
+  rpc AddUserRelationToCache (AddUserRelationToCacheRequest) returns (AddUserRelationToCacheResponse);
+  rpc RemoveUserRelationFromCache (RemoveUserRelationFromCacheRequest) returns (RemoveUserRelationFromCacheResponse);
+}
+
+// User Cache
+message CheckUserInCacheRequest {
+  string userId = 1;
+}
+message CheckUserInCacheResponse {
+  bool exists = 1;
+}
+message AddUserToCacheRequest {
+  string userId = 1;
+  string userData = 2;
+}
+message AddUserToCacheResponse {
+  bool success = 1;
+}
+message UpdateUserInCacheRequest {
+  string userId = 1;
+  string updatedData = 2;
+}
+message UpdateUserInCacheResponse {
+  bool success = 1;
+}
+message RemoveUserFromCacheRequest {
+  string userId = 1;
+}
+message RemoveUserFromCacheResponse {
+  bool success = 1;
+}
+
+message CheckTokenInCacheRequest {
+  string token = 1;
+}
+message CheckTokenInCacheResponse {
+  bool exists = 1;
+}
+message RemoveTokenFromCacheRequest {
+  string token = 1;
+}
+message RemoveTokenFromCacheResponse {
+  bool success = 1;
+}
+
+message CheckMessagesInCacheRequest {
+  string conversationId = 1;
+}
+message CheckMessagesInCacheResponse {
+  bool exists = 1;
+  repeated string messages = 2;
+}
+message AddMessagesToCacheRequest {
+  string conversationId = 1;
+  repeated string messages = 2;
+}
+message AddMessagesToCacheResponse {
+  bool success = 1;
+}
+message RemoveMessagesFromCacheRequest {
+  string conversationId = 1;
+}
+message RemoveMessagesFromCacheResponse {
+  bool success = 1;
+}
+
+message CheckNotificationsInCacheRequest {
+  string userId = 1;
+}
+message CheckNotificationsInCacheResponse {
+  bool exists = 1;
+  repeated string notifications = 2;
+}
+message AddNotificationsToCacheRequest {
+  string userId = 1;
+  repeated string notifications = 2;
+}
+message AddNotificationsToCacheResponse {
+  bool success = 1;
+}
+message RemoveNotificationsFromCacheRequest {
+  string userId = 1;
+}
+message RemoveNotificationsFromCacheResponse {
+  bool success = 1;
+}
+
+message CheckUserRelationInCacheRequest {
+  string userId1 = 1;
+  string userId2 = 2;
+}
+message CheckUserRelationInCacheResponse {
+  bool exists = 1;
+}
+message AddUserRelationToCacheRequest {
+  string userId1 = 1;
+  string userId2 = 2;
+}
+message AddUserRelationToCacheResponse {
+  bool success = 1;
+}
+message RemoveUserRelationFromCacheRequest {
+  string userId1 = 1;
+  string userId2 = 2;
+}
+message RemoveUserRelationFromCacheResponse {
+  bool success = 1;
+}

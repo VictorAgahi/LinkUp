@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.7.0
 //   protoc               v5.29.3
-// source: proto/auth.proto
+// source: auth.proto
 
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
@@ -10,96 +10,214 @@ import { Observable } from "rxjs";
 
 export const protobufPackageAuth = "auth";
 
-export interface DeleteUserRequest {
-  id: string;
-}
-
-export interface CreateUserRequest {
-  firstName: string;
-  lastName: string;
-  username: string;
+export interface RegisterRequest {
+  firstname: string;
+  lastname: string;
   email: string;
+  phoneNumber: string;
+  username: string;
   password: string;
 }
 
-export interface GetUserRequest {
-  id: string;
+export interface RegisterResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
 }
 
-export interface UpdateUserRequest {
-  id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-}
-
-export interface UserResponse {
-  id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-}
-
-export interface GetAllUsersRequest {
-  page: number;
-  limit: number;
-}
-
-export interface GetAllUsersResponse {
-  users: User[];
-  total: number;
-}
-
-export interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
+export interface LoginRequest {
+  identifier: string;
   password: string;
+}
+
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+}
+
+export interface LogoutRequest {
+  userId: string;
+}
+
+export interface LogoutResponse {
+  message: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+  expiresAt: number;
+}
+
+export interface ValidateTokenRequest {
+  accessToken: string;
+}
+
+export interface ValidateTokenResponse {
+  isValid: boolean;
+  userId: string;
+  roles: string[];
+}
+
+export interface RevokeTokenRequest {
+  refreshToken: string;
+}
+
+export interface RevokeTokenResponse {
+  message: string;
+}
+
+export interface ChangePasswordRequest {
+  userId: string;
+  oldPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  resetToken: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+export interface CheckPermissionsRequest {
+  userId: string;
+  permissions: string[];
+}
+
+export interface CheckPermissionsResponse {
+  grantedPermissions: string[];
+}
+
+export interface ListSessionsRequest {
+  userId: string;
+}
+
+export interface ListSessionsResponse {
+  sessions: Session[];
+}
+
+export interface Session {
+  sessionId: string;
+  device: string;
+  ipAddress: string;
+  lastActive: number;
+}
+
+export interface ToggleMFARequest {
+  userId: string;
+  enable: boolean;
+}
+
+export interface ToggleMFAResponse {
+  message: string;
+}
+
+export interface ErrorResponse {
+  code: number;
+  message: string;
 }
 
 export const AUTH_PACKAGE_NAME = "auth";
 
-export interface UsersServiceClient {
-  createUser(request: CreateUserRequest): Observable<UserResponse>;
+export interface AuthServiceClient {
+  register(request: RegisterRequest): Observable<RegisterResponse>;
 
-  getUser(request: GetUserRequest): Observable<UserResponse>;
+  login(request: LoginRequest): Observable<LoginResponse>;
 
-  updateUser(request: UpdateUserRequest): Observable<UserResponse>;
+  logout(request: LogoutRequest): Observable<LogoutResponse>;
 
-  deleteUser(request: DeleteUserRequest): Observable<UserResponse>;
+  refreshAccessToken(request: RefreshTokenRequest): Observable<RefreshTokenResponse>;
 
-  getAllUsers(request: Observable<GetAllUsersRequest>): Observable<GetAllUsersResponse>;
+  validateAccessToken(request: ValidateTokenRequest): Observable<ValidateTokenResponse>;
+
+  revokeRefreshToken(request: RevokeTokenRequest): Observable<RevokeTokenResponse>;
+
+  changePassword(request: ChangePasswordRequest): Observable<ChangePasswordResponse>;
+
+  resetPassword(request: ResetPasswordRequest): Observable<ResetPasswordResponse>;
+
+  checkPermissions(request: CheckPermissionsRequest): Observable<CheckPermissionsResponse>;
+
+  listActiveSessions(request: ListSessionsRequest): Observable<ListSessionsResponse>;
+
+  toggleMfa(request: ToggleMFARequest): Observable<ToggleMFAResponse>;
 }
 
-export interface UsersServiceController {
-  createUser(request: CreateUserRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+export interface AuthServiceController {
+  register(request: RegisterRequest): Promise<RegisterResponse> | Observable<RegisterResponse> | RegisterResponse;
 
-  getUser(request: GetUserRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  login(request: LoginRequest): Promise<LoginResponse> | Observable<LoginResponse> | LoginResponse;
 
-  updateUser(request: UpdateUserRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  logout(request: LogoutRequest): Promise<LogoutResponse> | Observable<LogoutResponse> | LogoutResponse;
 
-  deleteUser(request: DeleteUserRequest): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  refreshAccessToken(
+    request: RefreshTokenRequest,
+  ): Promise<RefreshTokenResponse> | Observable<RefreshTokenResponse> | RefreshTokenResponse;
 
-  getAllUsers(request: Observable<GetAllUsersRequest>): Observable<GetAllUsersResponse>;
+  validateAccessToken(
+    request: ValidateTokenRequest,
+  ): Promise<ValidateTokenResponse> | Observable<ValidateTokenResponse> | ValidateTokenResponse;
+
+  revokeRefreshToken(
+    request: RevokeTokenRequest,
+  ): Promise<RevokeTokenResponse> | Observable<RevokeTokenResponse> | RevokeTokenResponse;
+
+  changePassword(
+    request: ChangePasswordRequest,
+  ): Promise<ChangePasswordResponse> | Observable<ChangePasswordResponse> | ChangePasswordResponse;
+
+  resetPassword(
+    request: ResetPasswordRequest,
+  ): Promise<ResetPasswordResponse> | Observable<ResetPasswordResponse> | ResetPasswordResponse;
+
+  checkPermissions(
+    request: CheckPermissionsRequest,
+  ): Promise<CheckPermissionsResponse> | Observable<CheckPermissionsResponse> | CheckPermissionsResponse;
+
+  listActiveSessions(
+    request: ListSessionsRequest,
+  ): Promise<ListSessionsResponse> | Observable<ListSessionsResponse> | ListSessionsResponse;
+
+  toggleMfa(request: ToggleMFARequest): Promise<ToggleMFAResponse> | Observable<ToggleMFAResponse> | ToggleMFAResponse;
 }
 
-export function UsersServiceControllerMethods() {
+export function AuthServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["createUser", "getUser", "updateUser", "deleteUser"];
+    const grpcMethods: string[] = [
+      "register",
+      "login",
+      "logout",
+      "refreshAccessToken",
+      "validateAccessToken",
+      "revokeRefreshToken",
+      "changePassword",
+      "resetPassword",
+      "checkPermissions",
+      "listActiveSessions",
+      "toggleMfa",
+    ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcMethod("UsersService", method)(constructor.prototype[method], method, descriptor);
+      GrpcMethod("AuthService", method)(constructor.prototype[method], method, descriptor);
     }
-    const grpcStreamMethods: string[] = ["getAllUsers"];
+    const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcStreamMethod("UsersService", method)(constructor.prototype[method], method, descriptor);
+      GrpcStreamMethod("AuthService", method)(constructor.prototype[method], method, descriptor);
     }
   };
 }
 
-export const USERS_SERVICE_NAME = "UsersService";
+export const AUTH_SERVICE_NAME = "AuthService";

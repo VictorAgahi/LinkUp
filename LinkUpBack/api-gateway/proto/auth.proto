@@ -1,59 +1,136 @@
-syntax="proto3";
+syntax = "proto3";
 
 package auth;
 
-service UsersService{
-    rpc CreateUser (CreateUserRequest) returns (UserResponse);
-    rpc GetUser (GetUserRequest) returns (UserResponse);
-    rpc UpdateUser (UpdateUserRequest) returns (UserResponse);
-    rpc DeleteUser (DeleteUserRequest) returns (UserResponse);
-    rpc GetAllUsers (stream GetAllUsersRequest) returns (stream GetAllUsersResponse);
-}
-message DeleteUserRequest {
-  string id = 1;
-}
-message CreateUserRequest {
-  string first_name = 1;
-  string last_name = 2;
-  string username = 3;
-  string email = 4;
-  string password = 5;
+service AuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc RefreshAccessToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc ValidateAccessToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RevokeRefreshToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse);
+  rpc CheckPermissions(CheckPermissionsRequest) returns (CheckPermissionsResponse);
+  rpc ListActiveSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc ToggleMFA(ToggleMFARequest) returns (ToggleMFAResponse);
 }
 
-message GetUserRequest {
-  string id = 1;
-}
-message UpdateUserRequest {
-  string id = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string username = 4;
-  string email = 5;
-}
-
-message UserResponse {
-  string id = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string username = 4;
-  string email = 5;
-}
-
-message GetAllUsersRequest 
-{
-    int32 page = 1;
-    int32 limit = 2;
-}
-message GetAllUsersResponse {
-    repeated User users = 1;
-    int32 total = 2;
-}
-
-message User {
-  string id = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string username = 4;
-  string email = 5;
+message RegisterRequest {
+  string firstname = 1;
+  string lastname = 2;
+  string email = 3;
+  string phoneNumber = 4;
+  string username = 5;
   string password = 6;
+}
+
+message RegisterResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_at = 3; 
+}
+
+message LoginRequest {
+  string identifier = 1; 
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_at = 3;
+}
+
+message LogoutRequest {
+  string user_id = 1;
+}
+
+message LogoutResponse {
+  string message = 1;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  int64 expires_at = 2;
+}
+
+message ValidateTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateTokenResponse {
+  bool is_valid = 1;
+  string user_id = 2;
+  repeated string roles = 3; 
+}
+
+message RevokeTokenRequest {
+  string refresh_token = 1;
+}
+
+message RevokeTokenResponse {
+  string message = 1;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordResponse {
+  string message = 1;
+}
+
+message ResetPasswordRequest {
+  string email = 1;
+  string reset_token = 2; 
+  string new_password = 3;
+}
+
+message ResetPasswordResponse {
+  string message = 1;
+}
+
+message CheckPermissionsRequest {
+  string user_id = 1;
+  repeated string permissions = 2;
+}
+
+message CheckPermissionsResponse {
+  repeated string granted_permissions = 1;
+}
+
+message ListSessionsRequest {
+  string user_id = 1;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+message Session {
+  string session_id = 1;
+  string device = 2;
+  string ip_address = 3;
+  int64 last_active = 4;
+}
+
+message ToggleMFARequest {
+  string user_id = 1;
+  bool enable = 2;
+}
+
+message ToggleMFAResponse {
+  string message = 1;
+}
+
+message ErrorResponse {
+  int32 code = 1;
+  string message = 2;
 }

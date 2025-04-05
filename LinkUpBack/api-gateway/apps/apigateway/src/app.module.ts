@@ -1,19 +1,17 @@
 import { Module, Scope,MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+
 import { RequestModule } from './request/request.module';
 import { AuthenticationMiddleware } from './middleware/authentification.middleware';
 import { AuthGuard } from './guard/auth.guard';
 import { LoggingInterceptor } from './interceptors/logging.interceptors';
 import { HttpExceptionFilter } from './filtrer/http-exception.filter';
-import { UsersModule } from './users/users.module';
+import AuthModule from './auth/auth.module';
 
 @Module({
-  imports: [RequestModule, UsersModule],
-  controllers: [AppController],
+  imports: [RequestModule,AuthModule ],
+  controllers: [],
   providers: 
-  [
-    AppService, 
+  [ 
     {
     provide: 'APP_GUARD',
     useClass: AuthGuard,

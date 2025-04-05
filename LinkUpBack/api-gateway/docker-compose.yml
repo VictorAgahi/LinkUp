@@ -1,0 +1,184 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: linkup_postgres
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - linkup_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5
+    container_name: linkup_neo4j
+    restart: always
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - linkup_network
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p $NEO4J_PASSWORD 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: linkup_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - linkup_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: ./apps/apigateway/Dockerfile
+    container_name: linkup_apigateway
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      auth:
+        condition: service_started
+      user_service:
+        condition: service_started
+    networks:
+      - linkup_network
+
+  auth:
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+    container_name: linkup_auth
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5005:5005"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - linkup_network
+
+  crypto_service:
+    build:
+      context: .
+      dockerfile: ./apps/crypto_service/Dockerfile
+    container_name: linkup_crypto
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5001:5001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - linkup_network
+
+  database_service:
+    build:
+      context: .
+      dockerfile: ./apps/database_service/Dockerfile
+    container_name: linkup_database
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5002:5002"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - linkup_network
+
+  cache_service:
+    build:
+      context: .
+      dockerfile: ./apps/cache_service/Dockerfile
+    container_name: linkup_cache
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5003:5003"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - linkup_network
+
+  user_service:
+    build:
+      context: .
+      dockerfile: ./apps/user_service/Dockerfile
+    container_name: linkup_user
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "5004:5004"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      database_service:
+        condition: service_started
+      neo4j:
+        condition: service_healthy
+    networks:
+      - linkup_network
+
+networks:
+  linkup_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  redis_data:

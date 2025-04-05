@@ -1,0 +1,1 @@
+export const CRYPTO_PORT = process.env.CRYPTO_PORT || 'crypto_service:5001';

@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
+  rpc GetUserByEmailOrUsername(GetUserByEmailOrUsernameRequest) returns (GetUserByEmailOrUsernameResponse);
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc LikeUser(LikeUserFromUserServiceRequest) returns (LikeUserFromUserServiceResponse);
+  rpc UnlikeUser(UnlikeUserRequest) returns (UnlikeUserResponse);
+  rpc GetLikedUsers(GetLikedUsersFromUserServiceRequest) returns (GetLikedUsersFromUserServiceResponse);
+  rpc GetMatches(GetMatchesRequest) returns (GetMatchesResponse);
+  rpc SearchUsers(SearchUsersFromUserServiceRequest) returns (SearchUsersFromUserServiceResponse);
+  rpc GetSuggestedUsers(GetSuggestedUsersRequest) returns (GetSuggestedUsersResponse);
+  rpc UpdateUserStatus(UpdateUserStatusRequest) returns (UpdateUserStatusResponse);
+  rpc IsUserOnline(IsUserOnlineRequest) returns (IsUserOnlineResponse);
+  rpc ToggleNotifications(ToggleNotificationsRequest) returns (ToggleNotificationsResponse);
+  rpc GetUserNotifications(GetUserNotificationsRequest) returns (GetUserNotificationsResponse);
+}
+
+
+message GetUserByIdRequest {
+  string userId = 1;
+}
+
+message GetUserByIdResponse {
+  string userId = 1;
+  string username = 2;
+  string email = 3;
+}
+
+message GetUserByEmailOrUsernameRequest {
+  string emailOrUsername = 1;
+}
+
+message GetUserByEmailOrUsernameResponse {
+  string userId = 1;
+  string username = 2;
+  string email = 3;
+}
+
+message UpdateUserProfileRequest {
+  string userId = 1;
+  string username = 2;
+  string email = 3;
+  string firstname = 4;
+  string lastname = 5;
+}
+
+message UpdateUserProfileResponse {
+  bool success = 1;
+}
+
+message DeleteUserRequest {
+  string userId = 1;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+}
+
+message LikeUserFromUserServiceRequest {
+  string userId = 1;
+  string targetUserId = 2;
+}
+
+message LikeUserFromUserServiceResponse {
+  bool success = 1;
+}
+
+message UnlikeUserRequest {
+  string userId = 1;
+  string targetUserId = 2;
+}
+
+message UnlikeUserResponse {
+  bool success = 1;
+}
+
+message GetLikedUsersFromUserServiceRequest {
+  string userId = 1;
+}
+
+message GetLikedUsersFromUserServiceResponse {
+  repeated string likedUserIds = 1;
+}
+
+message GetMatchesRequest {
+  string userId = 1;
+}
+
+message GetMatchesResponse {
+  repeated string matchedUserIds = 1;
+}
+
+message SearchUsersFromUserServiceRequest {
+  string query = 1;
+}
+
+message SearchUsersFromUserServiceResponse {
+  repeated string userIds = 1;
+}
+
+message GetSuggestedUsersRequest {
+  string userId = 1;
+}
+
+message GetSuggestedUsersResponse {
+  repeated string suggestedUserIds = 1;
+}
+
+message UpdateUserStatusRequest {
+  string userId = 1;
+  string status = 2; 
+}
+
+message UpdateUserStatusResponse {
+  bool success = 1;
+}
+
+message IsUserOnlineRequest {
+  string userId = 1;
+}
+
+message IsUserOnlineResponse {
+  bool isOnline = 1;
+}
+
+message ToggleNotificationsRequest {
+  string userId = 1;
+  bool enableNotifications = 2;
+}
+
+message ToggleNotificationsResponse {
+  bool success = 1;
+}
+
+message GetUserNotificationsRequest {
+  string userId = 1;
+}
+
+message GetUserNotificationsResponse {
+  repeated string notifications = 1;
+}
